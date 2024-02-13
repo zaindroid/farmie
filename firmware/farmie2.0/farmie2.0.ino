@@ -10,6 +10,16 @@
 #include "ESPAsyncWebServer.h"
 #include <Adafruit_BME280.h>
 #include <Adafruit_Sensor.h>
+#include <TimeLib.h>
+#include <TimeAlarms.h>
+#include <NTPClient.h>
+#include <WiFiUdp.h>
+// Global variables to store alarm IDs
+AlarmId AlarmIdOn;
+AlarmId AlarmIdOff;
+
+WiFiUDP ntpUDP;
+NTPClient timeClient(ntpUDP, "pool.ntp.org", 3600, 60000);
 
 // Replace with your network credentials
 const char* ssid = "Rivendell";
@@ -82,7 +92,10 @@ const char index_html[] PROGMEM = R"rawliteral(
     .slider:before {position: absolute; content: ""; height: 52px; width: 52px; left: 8px; bottom: 8px; background-color: #fff; -webkit-transition: .4s; transition: .4s; border-radius: 68px}
     input:checked+.slider {background-color: #1b78e2}
     input:checked+.slider:before {-webkit-transform: translateX(52px); -ms-transform: translateX(52px); transform: translateX(52px)}
-    .topnav { overflow: hidden; background-color: #1b78e2;}
+  .topnav {overflow: hidden; background-color: #1b78e2; color: white;display: flex;justify-content: space-between; align-items: center; padding: 0 20px;}
+  .topnav h3 {flex-grow: 1;text-align: center;margin: 0;}
+.time-display {font-size: 1.2rem;font-weight: bold;  margin-right: 15px; /* additional styling to match the theme */}
+
     .content { padding: 20px;}
     .card { background-color: white; box-shadow: 2px 2px 12px 1px rgba(140,140,140,.5);}
     .cards { max-width: 700px; margin: 0 auto; display: grid; grid-gap: 2rem; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));}
@@ -95,17 +108,21 @@ const char index_html[] PROGMEM = R"rawliteral(
     .card-light{ color: #008B74;}
     .card-bme{ color: #572dfb;}
     .card-motion{ color: #3b3b3b; cursor: pointer;}
-    .icon-pointer{ cursor: pointer;}
+    .icon-pointer{ cursor: pointer; padding-left: 15px; }
   </style>
 </head>
 <body>
-  <div class="topnav">
-    <h3>FARMIE DASHBOARD <span style="text-align:right;">&nbsp;&nbsp; <i class="fas fa-user-slash icon-pointer" onclick="logoutButton()"></i></span></h3>
-  </div>
+<div class="topnav">
+  <h3>FARMIE DASHBOARD</h3>
+  <span id="current-time" class="time-display">22:53:39</span>
+  <i class="fas fa-user-slash icon-pointer" onclick="logoutButton()"></i>
+</div>
+
   <div class="content">
     <div class="cards">
       %BUTTONPLACEHOLDER%
-    
+
+
       <div class="card card-bme">
         <h4><i class="fas fa-chart-bar"></i> TEMPERATURE</h4><div><p class="reading"><span id="temp"></span>&deg;C</p></div>
       </div>
@@ -122,6 +139,23 @@ const char index_html[] PROGMEM = R"rawliteral(
   <h4>Fan Speed</h4>
   <input type="range" onchange="adjustFanSpeed(this)" id="fan-slider" min="0" max="255" value="127" class="slider2">
 </div>
+
+<div class="card">
+  <h4>Fan Schedule</h4>
+  Time On: <input type="time" id="fan-time-on"><br>
+  Time Off: <input type="time" id="fan-time-off"><br>
+  Days: <select id="fan-days">
+    <option value="0">Sunday</option>
+    <option value="1">Monday</option>
+    <option value="2">Tuesday</option>
+    <option value="3">Wednesday</option>
+    <option value="4">Thursday</option>
+    <option value="5">Friday</option>
+    <option value="6">Saturday</option>
+  </select><br>
+  <button onclick="setFanSchedule()">Set Schedule</button>
+</div>
+
 
 
   </div>
@@ -152,6 +186,17 @@ function adjustFanSpeed(element) {
   xhr.open("GET", "/adjust-fan?speed=" + value, true); // Send the value as a query parameter
   xhr.send();
 }
+
+function setFanSchedule() {
+  var timeOn = document.getElementById('fan-time-on').value;
+  var timeOff = document.getElementById('fan-time-off').value;
+
+  var xhr = new XMLHttpRequest();
+  xhr.open("GET", "/update-fan-schedule?timeOn=" + timeOn + "&timeOff=" + timeOff, true);
+  xhr.send();
+}
+
+
 
 function controlOutput(element) {
   var xhr = new XMLHttpRequest();
@@ -203,9 +248,17 @@ if (!!window.EventSource) {
     console.log("Events Disconnected");
   }
  }, false);
+
+   source.addEventListener('time', function(e) {
+    document.getElementById('current-time').innerHTML = e.data;
+  }, false);
  source.addEventListener('message', function(e) {
   console.log("message", e.data);
  }, false);
+ source.addEventListener('time', function(event) {
+  document.getElementById('time-display').innerHTML = event.data;
+}, false);
+
  source.addEventListener('led_state', function(e) {
   console.log("led_state", e.data);
   var inputChecked;
@@ -277,6 +330,9 @@ String processor(const String& var){
   return String();
 }
 
+void turnOnFan();
+void turnOffFan();
+
 void setup(){
   // Serial port for debugging purposes
   Serial.begin(115200);
@@ -314,6 +370,11 @@ pinMode(fertilizerPumpPin, OUTPUT);
     delay(1000);
     Serial.println("Connecting to WiFi..");
   }
+   timeClient.begin();
+
+    // Update the NTP client to set the system time
+  timeClient.update();
+  setTime(timeClient.getEpochTime());
   // Print ESP32 Local IP Address
   Serial.println(WiFi.localIP());
 
@@ -382,6 +443,33 @@ server.on("/toggle-water", HTTP_GET, [] (AsyncWebServerRequest *request) {
     }
   });
 
+  // Create a route to update fan schedule
+  server.on("/update-fan-schedule", HTTP_GET, [] (AsyncWebServerRequest *request) {
+    if (request->hasParam("timeOn") && request->hasParam("timeOff")) {
+      // Parse the time parameters
+      String timeOn = request->getParam("timeOn")->value();
+      String timeOff = request->getParam("timeOff")->value();
+      
+      // Parse the time strings to hours and minutes
+      int hourOn = timeOn.substring(0, 2).toInt();
+      int minuteOn = timeOn.substring(3, 5).toInt();
+      int hourOff = timeOff.substring(0, 2).toInt();
+      int minuteOff = timeOff.substring(3, 5).toInt();
+      
+      // Clear existing alarms to avoid duplicates
+      Alarm.free(AlarmIdOn);
+      Alarm.free(AlarmIdOff);
+      
+      // Set new alarms with parsed times
+      AlarmIdOn = Alarm.alarmRepeat(hourOn, minuteOn, 0, turnOnFan); // Alarm ID for turning on
+      AlarmIdOff = Alarm.alarmRepeat(hourOff, minuteOff, 0, turnOffFan); // Alarm ID for turning off
+
+      request->send(200, "text/plain", "Fan schedule updated");
+    } else {
+      request->send(400, "text/plain", "Invalid parameters");
+    }
+  });
+
 // Route for adjusting light intensity
 server.on("/adjust-light", HTTP_GET, [] (AsyncWebServerRequest *request) {
   if(!request->authenticate(http_username, http_password))
@@ -418,6 +506,8 @@ server.on("/toggle-fertilizer", HTTP_GET, [] (AsyncWebServerRequest *request) {
     // send event with message "hello!", id current millis and set reconnect delay to 1 second
     client->send("hello!",NULL,millis(),1000);
   });
+
+  
   server.addHandler(&events);
   
   // Start server
@@ -426,6 +516,17 @@ server.on("/toggle-fertilizer", HTTP_GET, [] (AsyncWebServerRequest *request) {
 
  
 void loop(){
+
+  static unsigned long lastTimeEvent = 0;
+  unsigned long currentTime = millis();
+  
+  if (currentTime - lastTimeEvent > 1000) { // Update every second
+    timeClient.update();
+    setTime(timeClient.getEpochTime());
+    String formattedTime = timeClient.getFormattedTime();
+    events.send(formattedTime.c_str(), "time", millis());
+    lastTimeEvent = currentTime;
+  }
   static unsigned long lastEventTime = millis();
   static const unsigned long EVENT_INTERVAL_MS = 10000;
   // read the state of the switch into a local variable
