@@ -27,11 +27,18 @@ const int ldr = 33;          // LDR (Light Dependent Resistor)
 const int motionSensor = 27; // PIR Motion Sensor
 const int waterPumpPin = 5;     // Water pump connected to GPIO 5
 const int fertilizerPumpPin = 21; // Fertilizer pump connected to GPIO 21
-// Define the PWM channel and frequency
-const int pwmChannel = 0;
-const int freq = 5000; // 5kHz frequency
-const int resolution = 8; // 8-bit resolution
+
+// Define the PWM channel for the light
+const int lightPwmChannel = 2; // Ensure this is a unique channel not used by other PWM devices
+const int lightFreq = 5000; // 5kHz frequency is typical for LEDs
+const int lightResolution = 8; // 8-bit resolution
 const int lightPwmPin = 23; // LED connected to GPIO 23
+
+// Define the PWM channel for the fan
+const int fanPwmChannel = 1;
+const int fanFreq = 25000; // 25kHz frequency typically used for fans
+const int fanResolution = 8; // 8-bit resolution
+const int fanPwmPin = 22; // Fan connected to GPIO 22
 
 int ledState = LOW;           // current state of the output pin
 int buttonState;              // current reading from the input pin
@@ -105,16 +112,17 @@ const char index_html[] PROGMEM = R"rawliteral(
       <div class="card card-bme">
         <h4><i class="fas fa-chart-bar"></i> HUMIDITY</h4><div><p class="reading"><span id="humi"></span>&percnt;</p></div>
       </div>
-      <div class="card card-light">
-        <h4><i class="fas fa-sun"></i> LIGHT</h4><div><p class="reading"><span id="light"></span></p></div>
-      </div>
+
       <div class="card">
   <h4>Light Intensity</h4>
   <input type="range" onchange="adjustLightIntensity(this)" id="light-slider" min="0" max="255" value="127" class="slider2">
 </div>
 
-      
-    
+<div class="card">
+  <h4>Fan Speed</h4>
+  <input type="range" onchange="adjustFanSpeed(this)" id="fan-slider" min="0" max="255" value="127" class="slider2">
+</div>
+
 
   </div>
 <script>
@@ -137,6 +145,14 @@ function adjustLightIntensity(element) {
   xhr.open("GET", "/adjust-light?intensity=" + value, true); // Send the value as a query parameter
   xhr.send();
 }
+
+function adjustFanSpeed(element) {
+  var xhr = new XMLHttpRequest();
+  var value = element.value; // Get the value from the slider
+  xhr.open("GET", "/adjust-fan?speed=" + value, true); // Send the value as a query parameter
+  xhr.send();
+}
+
 function controlOutput(element) {
   var xhr = new XMLHttpRequest();
   var state = element.checked ? "1" : "0";
@@ -206,10 +222,7 @@ if (!!window.EventSource) {
   console.log("humidity", e.data);
   document.getElementById("humi").innerHTML = e.data;
  }, false);
- source.addEventListener('light', function(e) {
-  console.log("light", e.data);
-  document.getElementById("light").innerHTML = e.data;
- }, false);
+
 }</script>
 </body>
 </html>
@@ -285,8 +298,12 @@ void setup(){
 pinMode(fertilizerPumpPin, OUTPUT);
 
  // Setup PWM for the lightPin
-  ledcSetup(pwmChannel, freq, resolution);
-  ledcAttachPin(lightPwmPin, pwmChannel);
+  ledcSetup(lightPwmChannel, lightFreq, lightResolution);
+  ledcAttachPin(lightPwmPin, lightPwmChannel);
+
+    // Setup PWM for the fanPin
+  ledcSetup(fanPwmChannel, fanFreq, fanResolution);
+  ledcAttachPin(fanPwmPin, fanPwmChannel);
 
   // Set motionSensor pin as interrupt, assign interrupt function and set RISING mode
   // attachInterrupt(digitalPinToInterrupt(motionSensor), detectsMovement, RISING);
@@ -351,6 +368,32 @@ server.on("/toggle-water", HTTP_GET, [] (AsyncWebServerRequest *request) {
     return request->requestAuthentication();
   digitalWrite(waterPumpPin, !digitalRead(waterPumpPin)); // Toggle the water pump state
   request->send(200, "text/plain", digitalRead(waterPumpPin) ? "ON" : "OFF");
+});
+
+ server.on("/adjust-fan", HTTP_GET, [] (AsyncWebServerRequest *request) {
+    if(!request->authenticate(http_username, http_password))
+      return request->requestAuthentication();
+    if (request->hasParam("speed")) {
+      int speed = request->getParam("speed")->value().toInt();
+      ledcWrite(fanPwmChannel, speed);
+      request->send(200, "text/plain", "Fan speed set to " + String(speed));
+    } else {
+      request->send(400, "text/plain", "Bad Request");
+    }
+  });
+
+// Route for adjusting light intensity
+server.on("/adjust-light", HTTP_GET, [] (AsyncWebServerRequest *request) {
+  if(!request->authenticate(http_username, http_password))
+    return request->requestAuthentication();
+  if (request->hasParam("intensity")) {
+    int intensity = request->getParam("intensity")->value().toInt();
+    // Map the intensity to the PWM range and write it
+    ledcWrite(lightPwmChannel, intensity);
+    request->send(200, "text/plain", "Light intensity set to " + String(intensity));
+  } else {
+    request->send(400, "text/plain", "Bad Request");
+  }
 });
 
 
