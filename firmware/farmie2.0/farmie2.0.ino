@@ -27,7 +27,11 @@ const int ldr = 33;          // LDR (Light Dependent Resistor)
 const int motionSensor = 27; // PIR Motion Sensor
 const int waterPumpPin = 5;     // Water pump connected to GPIO 5
 const int fertilizerPumpPin = 21; // Fertilizer pump connected to GPIO 21
-
+// Define the PWM channel and frequency
+const int pwmChannel = 0;
+const int freq = 5000; // 5kHz frequency
+const int resolution = 8; // 8-bit resolution
+const int lightPwmPin = 23; // LED connected to GPIO 23
 
 int ledState = LOW;           // current state of the output pin
 int buttonState;              // current reading from the input pin
@@ -104,6 +108,12 @@ const char index_html[] PROGMEM = R"rawliteral(
       <div class="card card-light">
         <h4><i class="fas fa-sun"></i> LIGHT</h4><div><p class="reading"><span id="light"></span></p></div>
       </div>
+      <div class="card">
+  <h4>Light Intensity</h4>
+  <input type="range" onchange="adjustLightIntensity(this)" id="light-slider" min="0" max="255" value="127" class="slider2">
+</div>
+
+      
     
 
   </div>
@@ -118,6 +128,13 @@ function logoutButton() {
 function togglePump(pumpType) {
   var xhr = new XMLHttpRequest();
   xhr.open("GET", "/toggle-" + pumpType, true);
+  xhr.send();
+}
+
+function adjustLightIntensity(element) {
+  var xhr = new XMLHttpRequest();
+  var value = element.value; // Get the value from the slider
+  xhr.open("GET", "/adjust-light?intensity=" + value, true); // Send the value as a query parameter
   xhr.send();
 }
 function controlOutput(element) {
@@ -266,6 +283,10 @@ void setup(){
   pinMode(motionSensor, INPUT_PULLUP);
   pinMode(waterPumpPin, OUTPUT);
 pinMode(fertilizerPumpPin, OUTPUT);
+
+ // Setup PWM for the lightPin
+  ledcSetup(pwmChannel, freq, resolution);
+  ledcAttachPin(lightPwmPin, pwmChannel);
 
   // Set motionSensor pin as interrupt, assign interrupt function and set RISING mode
   // attachInterrupt(digitalPinToInterrupt(motionSensor), detectsMovement, RISING);
