@@ -1,25 +1,27 @@
-/*********
-  Rui Santos
-  Complete project details at https://RandomNerdTutorials.com/esp32-iot-shield-pcb-dashboard/
-  The above copyright notice and this permission notice shall be included in all
-  copies or substantial portions of the Software.
-*********/
-
-// Import required libraries
 #include "WiFi.h"
 #include "ESPAsyncWebServer.h"
-#include <Adafruit_BME280.h>
-#include <Adafruit_Sensor.h>
+//#include <Adafruit_BME280.h>
+//include <Adafruit_Sensor.h>
 #include <TimeLib.h>
 #include <TimeAlarms.h>
-#include <NTPClient.h>
-#include <WiFiUdp.h>
+#include "RTClib.h"  // Use RTC library instead of NTPClient and WiFiUdp
 // Global variables to store alarm IDs
 AlarmId AlarmIdOn;
 AlarmId AlarmIdOff;
 
-WiFiUDP ntpUDP;
-NTPClient timeClient(ntpUDP, "pool.ntp.org", 3600, 60000);
+
+
+RTC_DS3231 rtc; // Instantiate the RTC object
+
+char daysOfWeek[7][12] = {
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday"
+};
 
 // Replace with your network credentials
 const char* ssid = "Rivendell";
@@ -29,7 +31,10 @@ const char* password = "Fireon1122";
 const char* http_username = "farmie";
 const char* http_password = "farmie2.0";
 
-Adafruit_BME280 bme;         // BME280 connect to ESP32 I2C (GPIO 21 = SDA, GPIO 22 = SCL)
+// Initialize sensors, pins, etc. as before
+//Adafruit_BME280 bme; // BME280 connected to ESP32 I2C
+// Define other pins and variables as before
+//Adafruit_BME280 bme;         // BME280 connect to ESP32 I2C (GPIO 21 = SDA, GPIO 22 = SCL)
 const int buttonPin = 32;    // Pushbutton
 const int ledPin = 19;       // Status LED
 const int output = 18;       // Output socket
@@ -71,7 +76,6 @@ void IRAM_ATTR detectsMovement() {
   motionDetected = true;
   clearMotionAlert = false;
 }
-
 // Main HTML web page in root url /
 const char index_html[] PROGMEM = R"rawliteral(
 <!DOCTYPE HTML><html>
@@ -331,54 +335,46 @@ String processor(const String& var){
 }
 
 void turnOnFan();
+
 void turnOffFan();
 
-void setup(){
-  // Serial port for debugging purposes
+void setup() {
   Serial.begin(115200);
-    
-  // if (!bme.begin(0x76)) {
-  //   Serial.println("Could not find a valid BME280 sensor, check wiring!");
-  //   while (1);
-  // }
-  
-  // initialize the pushbutton pin as an input
+
+  if (!rtc.begin()) {
+    Serial.println("Couldn't find RTC");
+    while (1);
+  }
+
+  if (rtc.lostPower()) {
+    Serial.println("RTC lost power, lets set the time!");
+    // The following line sets the RTC to the date & time this sketch was compiled
+    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+  }
+
   pinMode(buttonPin, INPUT);
-  // initialize the LED pin as an output
   pinMode(ledPin, OUTPUT);
-  // initialize the LED pin as an output
   pinMode(output, OUTPUT);
-  // PIR Motion Sensor mode INPUT_PULLUP
   pinMode(motionSensor, INPUT_PULLUP);
   pinMode(waterPumpPin, OUTPUT);
-pinMode(fertilizerPumpPin, OUTPUT);
+  pinMode(fertilizerPumpPin, OUTPUT);
 
- // Setup PWM for the lightPin
   ledcSetup(lightPwmChannel, lightFreq, lightResolution);
   ledcAttachPin(lightPwmPin, lightPwmChannel);
 
-    // Setup PWM for the fanPin
   ledcSetup(fanPwmChannel, fanFreq, fanResolution);
   ledcAttachPin(fanPwmPin, fanPwmChannel);
 
-  // Set motionSensor pin as interrupt, assign interrupt function and set RISING mode
-  // attachInterrupt(digitalPinToInterrupt(motionSensor), detectsMovement, RISING);
-    WiFi.mode(WIFI_AP_STA);
-  // Connect to Wi-Fi
+  WiFi.mode(WIFI_AP_STA);
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
     delay(1000);
     Serial.println("Connecting to WiFi..");
   }
-   timeClient.begin();
 
-    // Update the NTP client to set the system time
-  timeClient.update();
-  setTime(timeClient.getEpochTime());
-  // Print ESP32 Local IP Address
   Serial.println(WiFi.localIP());
 
-  // Route for root / web page
+   // Route for root / web page
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
    if(!request->authenticate(http_username, http_password))
       return request->requestAuthentication();
@@ -513,53 +509,76 @@ server.on("/toggle-fertilizer", HTTP_GET, [] (AsyncWebServerRequest *request) {
   // Start server
   server.begin();
 }
+void loop() {
 
- 
-void loop(){
+  //  DateTime now = rtc.now();
+  // Serial.print("ESP32 RTC Date Time: ");
+  // Serial.print(now.year(), DEC);
+  // Serial.print('/');
+  // Serial.print(now.month(), DEC);
+  // Serial.print('/');
+  // Serial.print(now.day(), DEC);
+  // Serial.print(" (");
+  // Serial.print(daysOfWeek[now.dayOfTheWeek()]);
+  // Serial.print(") ");
+  // Serial.print(now.hour(), DEC);
+  // Serial.print(':');
+  // Serial.print(now.minute(), DEC);
+  // Serial.print(':');
+  // Serial.println(now.second(), DEC);
+
+  // delay(1000); // delay 1 seconds
 
   static unsigned long lastTimeEvent = 0;
   unsigned long currentTime = millis();
-  
-  if (currentTime - lastTimeEvent > 1000) { // Update every second
-    timeClient.update();
-    setTime(timeClient.getEpochTime());
-    String formattedTime = timeClient.getFormattedTime();
-    events.send(formattedTime.c_str(), "time", millis());
+
+  // Update every second
+  if (currentTime - lastTimeEvent > 1000) {
+    DateTime now = rtc.now(); // Fetch the current time from the RTC
+
+    // Format the DateTime object into a string
+    char formattedTime[20];
+    sprintf(formattedTime, "%02d:%02d:%02d", now.hour(), now.minute(), now.second());
+
+    // Send the formatted time to the web server event
+    events.send(formattedTime, "time", millis());
+
     lastTimeEvent = currentTime;
   }
+
   static unsigned long lastEventTime = millis();
   static const unsigned long EVENT_INTERVAL_MS = 10000;
-  // read the state of the switch into a local variable
+  // Read the state of the switch into a local variable
   int reading = digitalRead(buttonPin);
 
-  // If the switch changed
+  // If the switch changed, reset the debouncing timer
   if (reading != lastButtonState) {
-    // reset the debouncing timer
     lastDebounceTime = millis();
   }
 
   if ((millis() - lastDebounceTime) > debounceDelay) {
-    // if the button state has changed:
+    // If the button state has changed:
     if (reading != buttonState) {
       buttonState = reading;
-      // only toggle the LED if the new button state is HIGH
+      // Only toggle the LED if the new button state is HIGH
       if (buttonState == HIGH) {
         ledState = !ledState;
         digitalWrite(ledPin, ledState);
-        events.send(String(digitalRead(ledPin)).c_str(),"led_state",millis());
+        events.send(String(digitalRead(ledPin)).c_str(), "led_state", millis());
       }
     }
   }
 
+  // Periodically send sensor readings or other events
   if ((millis() - lastEventTime) > EVENT_INTERVAL_MS) {
-    events.send("ping",NULL,millis());
-    events.send(String(37.5).c_str(),"temperature",millis());
-    events.send(String(85).c_str(),"humidity",millis());
-    events.send(String(64).c_str(),"light",millis());
+    events.send("ping", NULL, millis());
+    // Replace these placeholders with actual sensor readings
+    events.send(String(37.5).c_str(), "temperature", millis());
+    events.send(String(85).c_str(), "humidity", millis());
+    events.send(String(64).c_str(), "light", millis());
     lastEventTime = millis();
   }
-  
 
-  // save the reading. Next time through the loop, it'll be the lastButtonState:
+  // Save the reading. Next time through the loop, it'll be the lastButtonState:
   lastButtonState = reading;
 }
