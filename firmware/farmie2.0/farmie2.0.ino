@@ -22,8 +22,11 @@ WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP, "pool.ntp.org", 3600, 60000);
 
 // Replace with your network credentials
-const char* ssid = "Rivendell";
-const char* password = "Fireon1122";
+// const char* ssid = "Rivendell";
+// const char* password = "Fireon1122";
+
+const char *ssid = "Redmi 9A";
+const char *password = "fireon11";  // You can set a password for your AP
 
 // Web Server HTTP Authentication credentials
 const char* http_username = "farmie";
@@ -140,24 +143,6 @@ const char index_html[] PROGMEM = R"rawliteral(
   <input type="range" onchange="adjustFanSpeed(this)" id="fan-slider" min="0" max="255" value="127" class="slider2">
 </div>
 
-<div class="card">
-  <h4>Fan Schedule</h4>
-  Time On: <input type="time" id="fan-time-on"><br>
-  Time Off: <input type="time" id="fan-time-off"><br>
-  Days: <select id="fan-days">
-    <option value="0">Sunday</option>
-    <option value="1">Monday</option>
-    <option value="2">Tuesday</option>
-    <option value="3">Wednesday</option>
-    <option value="4">Thursday</option>
-    <option value="5">Friday</option>
-    <option value="6">Saturday</option>
-  </select><br>
-  <button onclick="setFanSchedule()">Set Schedule</button>
-</div>
-
-
-
   </div>
 <script>
 function logoutButton() {
@@ -187,14 +172,6 @@ function adjustFanSpeed(element) {
   xhr.send();
 }
 
-function setFanSchedule() {
-  var timeOn = document.getElementById('fan-time-on').value;
-  var timeOff = document.getElementById('fan-time-off').value;
-
-  var xhr = new XMLHttpRequest();
-  xhr.open("GET", "/update-fan-schedule?timeOn=" + timeOn + "&timeOff=" + timeOff, true);
-  xhr.send();
-}
 
 
 
@@ -443,32 +420,6 @@ server.on("/toggle-water", HTTP_GET, [] (AsyncWebServerRequest *request) {
     }
   });
 
-  // Create a route to update fan schedule
-  server.on("/update-fan-schedule", HTTP_GET, [] (AsyncWebServerRequest *request) {
-    if (request->hasParam("timeOn") && request->hasParam("timeOff")) {
-      // Parse the time parameters
-      String timeOn = request->getParam("timeOn")->value();
-      String timeOff = request->getParam("timeOff")->value();
-      
-      // Parse the time strings to hours and minutes
-      int hourOn = timeOn.substring(0, 2).toInt();
-      int minuteOn = timeOn.substring(3, 5).toInt();
-      int hourOff = timeOff.substring(0, 2).toInt();
-      int minuteOff = timeOff.substring(3, 5).toInt();
-      
-      // Clear existing alarms to avoid duplicates
-      Alarm.free(AlarmIdOn);
-      Alarm.free(AlarmIdOff);
-      
-      // Set new alarms with parsed times
-      AlarmIdOn = Alarm.alarmRepeat(hourOn, minuteOn, 0, turnOnFan); // Alarm ID for turning on
-      AlarmIdOff = Alarm.alarmRepeat(hourOff, minuteOff, 0, turnOffFan); // Alarm ID for turning off
-
-      request->send(200, "text/plain", "Fan schedule updated");
-    } else {
-      request->send(400, "text/plain", "Invalid parameters");
-    }
-  });
 
 // Route for adjusting light intensity
 server.on("/adjust-light", HTTP_GET, [] (AsyncWebServerRequest *request) {
