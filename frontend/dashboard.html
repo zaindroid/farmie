@@ -1,0 +1,276 @@
+<!DOCTYPE HTML><html>
+<head>
+  <title>FARMIE DASHBOARD</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+  <style>
+    html {font-family: Arial; display: inline-block; text-align: center;}
+    h3 {font-size: 1.8rem; color: white;}
+    h4 { font-size: 1.2rem;}
+    p { font-size: 1.4rem;}
+    body {  margin: 0;}
+    .switch {position: relative; display: inline-block; width: 120px; height: 68px; margin-bottom: 20px;}
+    .switch input {display: none;}
+    .slider {position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; border-radius: 68px;   opacity: 0.8;   cursor: pointer;}
+    .slider:before {position: absolute; content: ""; height: 52px; width: 52px; left: 8px; bottom: 8px; background-color: #fff; -webkit-transition: .4s; transition: .4s; border-radius: 68px}
+    input:checked+.slider {background-color: #1b78e2}
+    input:checked+.slider:before {-webkit-transform: translateX(52px); -ms-transform: translateX(52px); transform: translateX(52px)}
+  .topnav {overflow: hidden; background-color: #1b78e2; color: white;display: flex;justify-content: space-between; align-items: center; padding: 0 20px;}
+  .topnav h3 {flex-grow: 1;text-align: center;margin: 0;}
+.time-display {font-size: 1.2rem;font-weight: bold;  margin-right: 15px; /* additional styling to match the theme */}
+
+    .content { padding: 20px;}
+    .card { background-color: white; box-shadow: 2px 2px 12px 1px rgba(140,140,140,.5);}
+    .cards { max-width: 700px; margin: 0 auto; display: grid; grid-gap: 2rem; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));}
+    .slider2 { -webkit-appearance: none; margin: 14px;  height: 20px; background: #ccc; outline: none; opacity: 0.8; -webkit-transition: .2s; transition: opacity .2s; margin-bottom: 40px; }
+    .slider:hover, .slider2:hover { opacity: 1; }
+    .slider2::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 40px; height: 40px; background: #008B74; cursor: pointer; }
+    .slider2::-moz-range-thumb { width: 40px; height: 40px; background: #008B74; cursor: pointer;}
+    .reading { font-size: 2.6rem;}
+    .card-switch {color: #50a2ff; }
+    .card-light{ color: #008B74;}
+    .card-bme{ color: #572dfb;}
+    .card-motion{ color: #3b3b3b; cursor: pointer;}
+    .icon-pointer{ cursor: pointer; padding-left: 15px; }
+
+     .mode-switch-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 30px; /* Adjust this value for more or less spacing */
+    margin-top: 20px; /* Optional: add some space above the switch */
+  }
+
+  .mode-switch-container span {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin: 0 10px; /* Space between the text and the switch */
+    color: #333;
+  }
+
+  .switch {
+    position: relative;
+    display: inline-block;
+    width: 100px;
+    height: 40px;
+  }
+
+  .switch input { display: none; }
+
+  .slider {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: 0.4s;
+  }
+
+  .slider:before {
+    position: absolute;
+    content: "";
+    height: 32px;
+    width: 32px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    border-radius: 50%;
+    transition: 0.4s;
+  }
+
+  input:checked + .slider {
+    background-color: #1b78e2; /* Default blue for auto mode */
+    box-shadow: 0 0 20px 10px rgba(0, 0, 255, 0.5); /* Blue glow effect */
+    animation: blue-glow 1.5s infinite alternate; /* Animation for blue glow */
+  }
+
+  input:not(:checked) + .slider {
+    background-color: #ff3b3b; /* Red for manual mode */
+    box-shadow: 0 0 20px 10px rgba(255, 0, 0, 0.5); /* Red glow effect */
+    animation: red-glow 1.5s infinite alternate; /* Animation for red glow */
+  }
+
+  input:checked + .slider:before {
+    transform: translateX(60px); /* Adjust based on width of switch */
+  }
+
+  /* Keyframes for blue glow */
+  @keyframes blue-glow {
+    from { box-shadow: 0 0 10px 5px rgba(0, 0, 255, 0.5); }
+    to { box-shadow: 0 0 20px 10px rgba(0, 0, 255, 0.9); }
+  }
+
+  /* Keyframes for red glow */
+  @keyframes red-glow {
+    from { box-shadow: 0 0 10px 5px rgba(255, 0, 0, 0.5); }
+    to { box-shadow: 0 0 20px 10px rgba(255, 0, 0, 0.9); }
+  }
+
+  /* Rounded switch */
+  .slider.round {
+    border-radius: 20px;
+  }
+
+  .slider.round:before {
+    border-radius: 50%;
+  }
+  </style>
+</head>
+<body>
+<div class="topnav">
+  <h3>FARMIE DASHBOARD</h3>
+  <span id="current-time" class="time-display">22:53:39</span>
+  <i class="fas fa-user-slash icon-pointer" onclick="logoutButton()"></i>
+</div>
+
+  <div class="content">
+ <div class="mode-switch-container">
+  <span>Manual</span>
+  <label class="switch">
+    <input type="checkbox" id="modeToggle" onchange="toggleMode(this)">
+    <span class="slider round"></span>
+  </label>
+  <span>Auto</span>
+</div>
+    <div class="cards">
+      %BUTTONPLACEHOLDER%
+
+
+      <div class="card card-bme">
+        <h4><i class="fas fa-chart-bar"></i> TEMPERATURE</h4><div><p class="reading"><span id="temp"></span>&deg;C</p></div>
+      </div>
+      <div class="card card-bme">
+        <h4><i class="fas fa-chart-bar"></i> HUMIDITY</h4><div><p class="reading"><span id="humi"></span>&percnt;</p></div>
+      </div>
+
+ 
+
+  </div>
+<script>
+function logoutButton() {
+  var xhr = new XMLHttpRequest();
+  xhr.open("GET", "/logout", true);
+  xhr.send();
+  setTimeout(function(){ window.open("/logged-out","_self"); }, 1000);
+}
+
+function togglePump(pumpType) {
+  var xhr = new XMLHttpRequest();
+  xhr.open("GET", "/toggle-" + pumpType, true);
+  xhr.send();
+}
+
+function adjustLightIntensity(element) {
+  var xhr = new XMLHttpRequest();
+  var value = element.value; // Get the value from the slider
+  xhr.open("GET", "/adjust-light?intensity=" + value, true); // Send the value as a query parameter
+  xhr.send();
+}
+
+function toggleMode(element) {
+  var mode = element.checked ? "auto" : "manual";
+  var xhr = new XMLHttpRequest();
+  xhr.open("GET", "/mode-toggle?mode=" + mode, true);
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4 && xhr.status === 200) {
+      console.log("Mode changed to: " + mode);
+    }
+  };
+  xhr.send();
+}
+
+function adjustFanSpeed(element) {
+  var xhr = new XMLHttpRequest();
+  var value = element.value; // Get the value from the slider
+  xhr.open("GET", "/adjust-fan?speed=" + value, true); // Send the value as a query parameter
+  xhr.send();
+}
+
+
+
+
+function controlOutput(element) {
+  var xhr = new XMLHttpRequest();
+  var state = element.checked ? "1" : "0";
+  var url = "";
+
+  // Determine the control type based on the ID attribute of the element
+  switch(element.id) {
+    case "output":
+      url = "/output?state=" + state;
+      break;
+    case "status-led":
+      url = "/toggle-led?state=" + state;
+      break;
+    case "toggle-water":
+      url = "/toggle-water?state=" + state;
+      break;
+    case "toggle-fertilizer":
+      url = "/toggle-fertilizer?state=" + state;
+      break;
+    default:
+      console.error("Unknown control element", element.id);
+      return; // Exit the function if control type is unknown
+  }
+
+  xhr.open("GET", url, true);
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4 && xhr.status === 200) {
+      console.log(xhr.responseText);
+    }
+  };
+  xhr.send();
+}
+
+
+function toggleLed(element) {
+  var xhr = new XMLHttpRequest();
+  xhr.open("GET", "/toggle", true);
+  xhr.send();
+}
+
+if (!!window.EventSource) {
+ var source = new EventSource('/events');
+ source.addEventListener('open', function(e) {
+  console.log("Events Connected");
+ }, false);
+ source.addEventListener('error', function(e) {
+  if (e.target.readyState != EventSource.OPEN) {
+    console.log("Events Disconnected");
+  }
+ }, false);
+
+   source.addEventListener('time', function(e) {
+    document.getElementById('current-time').innerHTML = e.data;
+  }, false);
+ source.addEventListener('message', function(e) {
+  console.log("message", e.data);
+ }, false);
+ source.addEventListener('time', function(event) {
+  document.getElementById('time-display').innerHTML = event.data;
+}, false);
+
+ source.addEventListener('led_state', function(e) {
+  console.log("led_state", e.data);
+  var inputChecked;
+  if( e.data == 1){ inputChecked = true; }
+  else { inputChecked = false; }
+  document.getElementById("led").checked = inputChecked;
+ }, false);
+ 
+ source.addEventListener('temperature', function(e) {
+  console.log("temperature", e.data);
+  document.getElementById("temp").innerHTML = e.data;
+ }, false);
+ source.addEventListener('humidity', function(e) {
+  console.log("humidity", e.data);
+  document.getElementById("humi").innerHTML = e.data;
+ }, false);
+
+}</script>
+</body>
+</html>
