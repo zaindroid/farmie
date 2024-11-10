@@ -1,11 +1,8 @@
 
-
 // Import required libraries
 #include "WiFi.h"
 #include <Preferences.h>
 #include "ESPAsyncWebServer.h"
-// #include <Adafruit_BME280.h>
-// #include <Adafruit_Sensor>
 #include <TimeLib.h>
 #include <TimeAlarms.h>
 #include <NTPClient.h>
@@ -322,18 +319,62 @@ const char index_html[] PROGMEM = R"rawliteral(
   <h4>Schedule Settings</h4>
   <form id="scheduleForm">
     <label for="deviceSelect">Select Device:</label>
-    <select id="deviceSelect" name="device" onchange="loadSchedule()">
-      <option value="fan">Fan</option>
+    <select id="deviceSelect" name="device" onchange="showFields()">
       <option value="light">Light</option>
-      <option value="waterPump">Water Pump</option>
+      <option value="fan">Fan</option>
+      <option value="waterPump1">Water Pump Schedule 1</option>
+      <option value="waterPump2">Water Pump Schedule 2</option>
+      <option value="waterPump3">Water Pump Schedule 3</option>
       <option value="fertilizerPump">Fertilizer Pump</option>
     </select><br><br>
-    <label for="startHour">Start Hour:</label>
-    <input type="number" id="startHour" name="startHour" min="0" max="23"><br><br>
-    <label for="startMinute">Start Minute:</label>
-    <input type="number" id="startMinute" name="startMinute" min="0" max="59"><br><br>
-    <label for="duration">Duration (seconds):</label>
-    <input type="number" id="duration" name="duration" min="1"><br><br>
+
+    <!-- Light input fields -->
+    <div id="lightFields" class="input-fields">
+      <label for="lightOnHour">On Hour:</label>
+      <input type="number" id="lightOnHour" name="onHour" min="0" max="23"><br>
+      <label for="lightOnMinute">On Minute:</label>
+      <input type="number" id="lightOnMinute" name="onMinute" min="0" max="59"><br>
+      <label for="lightOffHour">Off Hour:</label>
+      <input type="number" id="lightOffHour" name="offHour" min="0" max="23"><br>
+      <label for="lightOffMinute">Off Minute:</label>
+      <input type="number" id="lightOffMinute" name="offMinute" min="0" max="59"><br>
+    </div>
+
+    <!-- Fan input fields -->
+    <div id="fanFields" class="input-fields">
+      <label for="fanOnHour">On Hour:</label>
+      <input type="number" id="fanOnHour" name="onHour" min="0" max="23"><br>
+      <label for="fanOnMinute">On Minute:</label>
+      <input type="number" id="fanOnMinute" name="onMinute" min="0" max="59"><br>
+      <label for="fanOffHour">Off Hour:</label>
+      <input type="number" id="fanOffHour" name="offHour" min="0" max="23"><br>
+      <label for="fanOffMinute">Off Minute:</label>
+      <input type="number" id="fanOffMinute" name="offMinute" min="0" max="59"><br>
+    </div>
+
+<!-- Water Pump input fields -->
+<div id="waterPumpFields" class="input-fields">
+  <label for="waterOnHour">On Hour:</label>
+  <input type="number" id="waterOnHour" name="onHour" min="0" max="23"><br>
+  <label for="waterOnMinute">On Minute:</label>
+  <input type="number" id="waterOnMinute" name="onMinute" min="0" max="59"><br>
+  <label for="waterDuration">Duration (minutes):</label>
+  <input type="number" id="waterDuration" name="duration" min="1"><br>
+</div>
+
+
+    <!-- Fertilizer Pump input fields -->
+    <div id="fertilizerFields" class="input-fields">
+      <label for="fertilizerDay">Day:</label>
+      <input type="number" id="fertilizerDay" name="day" min="1" max="7"><br>
+      <label for="fertilizerOnHour">On Hour:</label>
+      <input type="number" id="fertilizerOnHour" name="onHour" min="0" max="23"><br>
+      <label for="fertilizerOnMinute">On Minute:</label>
+      <input type="number" id="fertilizerOnMinute" name="onMinute" min="0" max="59"><br>
+      <label for="fertilizerDuration">Duration (seconds):</label>
+      <input type="number" id="fertilizerDuration" name="duration" min="1"><br>
+    </div>
+
     <input type="button" value="Save Schedule" onclick="saveSchedule()">
   </form>
   <div id="scheduleDisplay">
@@ -376,18 +417,46 @@ function toggleMode(element) {
   xhr.send();
 }
 
+function showFields() {
+  document.querySelectorAll('.input-fields').forEach(function(field) {
+    field.style.display = 'none';
+  });
+  var device = document.getElementById("deviceSelect").value;
+  if (device.includes("waterPump")) {
+    document.getElementById("waterPumpFields").style.display = 'block';
+  } else if (device === "fertilizerPump") {
+    document.getElementById("fertilizerFields").style.display = 'block';
+  } else {
+    document.getElementById(device + "Fields").style.display = 'block';
+  }
+}
+
 function saveSchedule() {
   var device = document.getElementById("deviceSelect").value;
-  var startHour = document.getElementById("startHour").value;
-  var startMinute = document.getElementById("startMinute").value;
-  var duration = document.getElementById("duration").value;
+  var params = `device=${device}`;
+
+  if (device === 'light' || device === 'fan') {
+    params += `&onHour=${document.getElementById(device + "OnHour").value}`;
+    params += `&onMinute=${document.getElementById(device + "OnMinute").value}`;
+    params += `&offHour=${document.getElementById(device + "OffHour").value}`;
+    params += `&offMinute=${document.getElementById(device + "OffMinute").value}`;
+  } else if (device.includes('waterPump')) {
+    params += `&onHour=${document.getElementById("waterOnHour").value}`;
+    params += `&onMinute=${document.getElementById("waterOnMinute").value}`;
+    params += `&duration=${document.getElementById("waterDuration").value}`;
+  } else if (device === 'fertilizerPump') {
+    params += `&day=${document.getElementById("fertilizerDay").value}`;
+    params += `&onHour=${document.getElementById("fertilizerOnHour").value}`;
+    params += `&onMinute=${document.getElementById("fertilizerOnMinute").value}`;
+    params += `&duration=${document.getElementById("fertilizerDuration").value}`;
+  }
 
   var xhr = new XMLHttpRequest();
-  xhr.open("GET", `/set-schedule?device=${device}&hour=${startHour}&minute=${startMinute}&duration=${duration}`, true);
+  xhr.open("GET", "/set-schedule?" + params, true);
   xhr.onload = function() {
     if (xhr.status === 200) {
       alert("Schedule saved!");
-      loadSchedule();  // Reload the current schedule after saving
+      loadSchedule();
     } else {
       alert("Failed to save schedule: " + xhr.responseText);
     }
@@ -401,7 +470,30 @@ function loadSchedule() {
   xhr.open("GET", `/get-schedule?device=${device}`, true);
   xhr.onload = function() {
     if (xhr.status === 200) {
-      document.getElementById("currentSchedule").innerText = xhr.responseText;
+      var schedule = xhr.responseText.split(',');
+
+      if (device.startsWith("waterPump")) {
+        // Display the schedule for water pumps
+        if (schedule.length === 3) {
+          document.getElementById("currentSchedule").innerText = `On: ${schedule[0]}:${schedule[1]}, Duration: ${schedule[2]} minutes`;
+        } else {
+          document.getElementById("currentSchedule").innerText = "No schedule found for water pump.";
+        }
+      } else if (device === "fertilizerPump") {
+        // Display the schedule for fertilizer pump
+        if (schedule.length === 4) {
+          document.getElementById("currentSchedule").innerText = `Day: ${schedule[0]}, On: ${schedule[1]}:${schedule[2]}, Duration: ${schedule[3]} minutes`;
+        } else {
+          document.getElementById("currentSchedule").innerText = "No schedule found for fertilizer pump.";
+        }
+      } else {
+        // Display the schedule for light or fan
+        if (schedule.length === 4) {
+          document.getElementById("currentSchedule").innerText = `On: ${schedule[0]}:${schedule[1]}, Off: ${schedule[2]}:${schedule[3]}`;
+        } else {
+          document.getElementById("currentSchedule").innerText = "No schedule found for light/fan.";
+        }
+      }
     } else {
       document.getElementById("currentSchedule").innerText = "No schedule found.";
     }
@@ -409,8 +501,17 @@ function loadSchedule() {
   xhr.send();
 }
 
-// Load initial schedule when the page loads
-window.onload = loadSchedule;
+
+window.onload = function() {
+  loadSchedule();
+  showFields(); // Ensure the correct input fields are displayed based on the initial selection
+};
+
+// Load the schedule whenever the dropdown selection changes
+document.getElementById("deviceSelect").addEventListener("change", function() {
+  loadSchedule(); // Load schedule for the newly selected device
+  showFields(); // Display the appropriate input fields
+});
 
 function adjustFanSpeed(element) {
   var xhr = new XMLHttpRequest();
@@ -554,6 +655,18 @@ String processor(const String& var){
   return String();
 }
 
+void clearOldSchedules() {
+  LittleFS.remove("/waterPump1_schedule.txt");
+  LittleFS.remove("/waterPump2_schedule.txt");
+  LittleFS.remove("/waterPump3_schedule.txt");
+  LittleFS.remove("/fan_schedule.txt");
+  LittleFS.remove("/light_schedule.txt");
+  LittleFS.remove("/fertilizerPump_schedule.txt");
+  Serial.println("Cleared old schedule files.");
+}
+  
+
+
 void turnOnFan();
 void turnOffFan();
 void turnOnLight();
@@ -575,14 +688,62 @@ void setup(){
   setTime(now.hour(), now.minute(), now.second(), now.day(), now.month(), now.year() - 2000); // Adjust year
   // setTime(14, 53, 00, 27, 2, 4024 - 2000); // Adjust year
   
+    preferences.begin("code_flag", false); // Open the preferences storage
+  bool codeUploaded = preferences.getBool("codeUploaded", false);
 
-  // setSchedules();
-
-    if (!LittleFS.begin()) {
+  if (!LittleFS.begin()) {
     Serial.println("An error has occurred while mounting LittleFS");
     return;
   }
   Serial.println("LittleFS mounted successfully");
+
+  // Check if this is the first run after code upload
+  // Check if this is the first run after code upload
+  if (!codeUploaded) {
+    clearOldSchedules(); // Clear old schedules only when new code is uploaded
+    preferences.putBool("codeUploaded", true); // Set the flag to true after clearing
+    Serial.println("Flag set to indicate code upload.");
+  } else {
+    Serial.println("Retaining schedules on reset.");
+  }
+
+  // Ensure all schedule files exist with default content
+  if (!LittleFS.exists("/light_schedule.txt")) {
+    writeFile(LittleFS, "/light_schedule.txt", "0,0,0,0");
+  }
+  if (!LittleFS.exists("/fan_schedule.txt")) {
+    writeFile(LittleFS, "/fan_schedule.txt", "0,0,0,0");
+  }
+  if (!LittleFS.exists("/waterPump1_schedule.txt")) {
+    writeFile(LittleFS, "/waterPump1_schedule.txt", "0,0,0");
+  }
+  if (!LittleFS.exists("/waterPump2_schedule.txt")) {
+    writeFile(LittleFS, "/waterPump2_schedule.txt", "0,0,0");
+  }
+  if (!LittleFS.exists("/waterPump3_schedule.txt")) {
+    writeFile(LittleFS, "/waterPump3_schedule.txt", "0,0,0");
+  }
+  if (!LittleFS.exists("/fertilizerPump_schedule.txt")) {
+    writeFile(LittleFS, "/fertilizerPump_schedule.txt", "0,0,0,0");
+  }
+
+  preferences.end(); // Close the preferences storage
+
+  // setSchedules();
+
+  // // Initialize LittleFS and format it if necessary
+  // if (!LittleFS.begin()) {
+  //   Serial.println("An error has occurred while mounting LittleFS. Formatting...");
+  //   LittleFS.format(); // Format LittleFS to clear all existing data when new code is uploaded
+  //   if (!LittleFS.begin()) {
+  //     Serial.println("Failed to mount LittleFS after formatting.");
+  //     return;
+  //   }
+  // } else {
+  //   // Uncomment the line below if you always want to format LittleFS on each upload (optional)
+  //   // LittleFS.format();
+  //   Serial.println("LittleFS mounted successfully");
+  // }
   // initialize the pushbutton pin as an input
   pinMode(buttonPin, INPUT);
   // initialize the LED pin as an output
@@ -729,22 +890,53 @@ server.on("/adjust-light", HTTP_GET, [] (AsyncWebServerRequest *request) {
 });
 
 server.on("/set-schedule", HTTP_GET, [](AsyncWebServerRequest *request) {
-  if (request->hasParam("device") && request->hasParam("hour") && request->hasParam("minute") && request->hasParam("duration")) {
+  if (request->hasParam("device")) {
     String device = request->getParam("device")->value();
-    int hour = request->getParam("hour")->value().toInt();
-    int minute = request->getParam("minute")->value().toInt();
-    int duration = request->getParam("duration")->value().toInt();
-
-    String scheduleData = String(hour) + "," + String(minute) + "," + String(duration);
+    String scheduleData;
     String filePath = "/" + device + "_schedule.txt";
 
-    // Write the schedule to the corresponding file
-    writeFile(LittleFS, filePath.c_str(), scheduleData.c_str());
-    request->send(200, "text/plain", "Schedule saved for " + device);
+    // Collect parameters based on the device type
+    if (device == "light" || device == "fan") {
+      if (request->hasParam("onHour") && request->hasParam("onMinute") && request->hasParam("offHour") && request->hasParam("offMinute")) {
+        int onHour = request->getParam("onHour")->value().toInt();
+        int onMinute = request->getParam("onMinute")->value().toInt();
+        int offHour = request->getParam("offHour")->value().toInt();
+        int offMinute = request->getParam("offMinute")->value().toInt();
+        scheduleData = String(onHour) + "," + String(onMinute) + "," + String(offHour) + "," + String(offMinute);
+      }
+    }  else if (device.startsWith("waterPump")) {
+      if (request->hasParam("onHour") && request->hasParam("onMinute") && request->hasParam("duration")) {
+        int onHour = request->getParam("onHour")->value().toInt();
+        int onMinute = request->getParam("onMinute")->value().toInt();
+        int durationInMinutes = request->getParam("duration")->value().toInt();
+        scheduleData = String(onHour) + "," + String(onMinute) + "," + String(durationInMinutes); // Store directly in minutes
+      }
+    }
+    else if (device == "fertilizerPump") {
+      if (request->hasParam("day") && request->hasParam("onHour") && request->hasParam("onMinute") && request->hasParam("duration")) {
+        int day = request->getParam("day")->value().toInt();
+        int onHour = request->getParam("onHour")->value().toInt();
+        int onMinute = request->getParam("onMinute")->value().toInt();
+        int duration = request->getParam("duration")->value().toInt();
+        scheduleData = String(day) + "," + String(onHour) + "," + String(onMinute) + "," + String(duration);
+      }
+    }
+
+    if (scheduleData.length() > 0) {
+      writeFile(LittleFS, filePath.c_str(), scheduleData.c_str());
+      Serial.println("Schedule saved for " + device + ": " + scheduleData); // Debug log
+      request->send(200, "text/plain", "Schedule saved for " + device);
+    } else {
+      Serial.println("Failed to save schedule: Missing parameters."); // Debug log
+      request->send(400, "text/plain", "Bad Request: Missing parameters.");
+    }
   } else {
-    request->send(400, "text/plain", "Bad Request: missing parameters");
+    Serial.println("Failed to save schedule: Missing device parameter."); // Debug log
+    request->send(400, "text/plain", "Bad Request: Missing device parameter.");
   }
 });
+
+
 
 server.on("/get-schedule", HTTP_GET, [](AsyncWebServerRequest *request) {
   if (request->hasParam("device")) {
@@ -753,14 +945,17 @@ server.on("/get-schedule", HTTP_GET, [](AsyncWebServerRequest *request) {
     String schedule = readFile(LittleFS, filePath.c_str());
 
     if (schedule.length() > 0) {
+      Serial.println("Schedule retrieved: " + schedule); // Debug log
       request->send(200, "text/plain", schedule);
     } else {
+      Serial.println("No schedule found for " + device); // Debug log
       request->send(404, "text/plain", "No schedule found for " + device);
     }
   } else {
     request->send(400, "text/plain", "Bad Request: missing device parameter");
   }
 });
+
 
 
 
@@ -835,27 +1030,7 @@ sensorSequencer.run();
   }
   static unsigned long lastEventTime = millis();
   static const unsigned long EVENT_INTERVAL_MS = 5000;
-  // read the state of the switch into a local variable
-  // int reading = digitalRead(buttonPin);
-
-  // // If the switch changed
-  // if (reading != lastButtonState) {
-  //   // reset the debouncing timer
-  //   lastDebounceTime = millis();
-  // }
-
-  // if ((millis() - lastDebounceTime) > debounceDelay) {
-  //   // if the button state has changed:
-  //   if (reading != buttonState) {
-  //     buttonState = reading;
-  //     // only toggle the LED if the new button state is HIGH
-  //     if (buttonState == HIGH) {
-  //       ledState = !ledState;
-  //       digitalWrite(ledPin, ledState);
-  //       events.send(String(digitalRead(ledPin)).c_str(),"led_state",millis());
-  //     }
-  //   }
-  // }
+ 
    manageSchedules(now);
 
       printPeripheralStatuses();
@@ -883,24 +1058,57 @@ void appendSchedule(fs::FS &fs, const char *path, const char *message) {
   file.close();
 }
 
-
-
-// Read schedules from a file and process them
 void processSchedules(String filePath, const DateTime& now, void (*turnOn)(), void (*turnOff)()) {
   String schedule = readFile(LittleFS, filePath.c_str());
-  
+
   if (schedule.length() > 0) {
     Serial.println("Processing schedule: " + schedule);
-    
-    int hour = schedule.substring(0, schedule.indexOf(',')).toInt();
-    int minute = schedule.substring(schedule.indexOf(',') + 1, schedule.lastIndexOf(',')).toInt();
-    int duration = schedule.substring(schedule.lastIndexOf(',') + 1).toInt();
 
-    // Check if the current time matches the schedule time
-    if (now.hour() == hour && now.minute() == minute && now.second() == 0) {
-      Serial.println("Match found - turning on the peripheral.");
-      turnOn();
-      Alarm.timerOnce(duration, turnOff);
+    int onHour, onMinute, offHour, offMinute, duration;
+    if (filePath.endsWith("light_schedule.txt") || filePath.endsWith("fan_schedule.txt")) {
+      sscanf(schedule.c_str(), "%d,%d,%d,%d", &onHour, &onMinute, &offHour, &offMinute);
+      Serial.printf("Parsed schedule for %s: On - %02d:%02d, Off - %02d:%02d\n", filePath.c_str(), onHour, onMinute, offHour, offMinute);
+      Serial.printf("Current time: %02d:%02d:%02d\n", now.hour(), now.minute(), now.second());
+
+      // Check if current time is within the active period
+      bool isActive = (now.hour() > onHour || (now.hour() == onHour && now.minute() >= onMinute)) &&
+                      (now.hour() < offHour || (now.hour() == offHour && now.minute() < offMinute));
+
+      if (isActive) {
+        Serial.println("Within active period: Turning on the device.");
+        turnOn();
+      } else if (now.hour() == offHour && now.minute() == offMinute) {
+        Serial.println("Reached off time: Turning off the device.");
+        turnOff();
+      } else {
+        Serial.println("Outside active period for lights/fan.");
+      }
+    } else if (filePath.startsWith("/waterPump")) {
+      sscanf(schedule.c_str(), "%d,%d,%d", &onHour, &onMinute, &duration);
+      Serial.printf("Parsed schedule for %s: On - %02d:%02d, Duration - %d minutes\n", filePath.c_str(), onHour, onMinute, duration);
+      Serial.printf("Current time: %02d:%02d:%02d\n", now.hour(), now.minute(), now.second());
+
+      if (now.hour() == onHour && now.minute() == onMinute) {
+        Serial.println("Within active period: Turning on the water pump.");
+        turnOn();
+        Alarm.timerOnce(duration * 60, turnOff); // Convert minutes to seconds here
+      } else {
+        Serial.println("Outside active period for water pump.");
+      }
+    }else if (filePath.endsWith("fertilizerPump_schedule.txt")) {
+      int day;
+      sscanf(schedule.c_str(), "%d,%d,%d,%d", &day, &onHour, &onMinute, &duration);
+      Serial.printf("Parsed schedule for fertilizer pump: Day - %d, On - %02d:%02d, Duration - %d seconds\n", day, onHour, onMinute, duration);
+      Serial.printf("Current time: Day - %d, Time - %02d:%02d:%02d\n", now.dayOfTheWeek(), now.hour(), now.minute(), now.second());
+
+      if (now.dayOfTheWeek() == day && now.hour() == onHour && now.minute() == onMinute) {
+        Serial.println("Turning on the fertilizer pump.");
+        turnOn();
+        Serial.printf("Setting timer to turn off after %d seconds.\n", duration);
+        Alarm.timerOnce(duration, turnOff);
+      } else {
+        Serial.println("Outside active period for fertilizer pump.");
+      }
     }
   } else {
     Serial.println("No schedule found or failed to read.");
@@ -910,59 +1118,25 @@ void processSchedules(String filePath, const DateTime& now, void (*turnOn)(), vo
 
 // Modify the manageSchedules function to handle multiple schedules
 void manageSchedules(const DateTime& now) {
-  if (!isAutoMode) {
-    return; // Skip schedules in manual mode
-  }
+    if (!isAutoMode) {
+        return; // Skip schedules in manual mode
+    }
 
-  processSchedules("/fan_schedule.txt", now, turnOnFan, turnOffFan);
-  processSchedules("/light_schedule.txt", now, turnOnLight, turnOffLight);
-  processSchedules("/waterPump_schedule.txt", now, turnOnWaterPump, turnOffWaterPump);
-  processSchedules("/fertilizerPump_schedule.txt", now, turnOnFertilizerPump, turnOffFertilizerPump);
+    processSchedules("/fan_schedule.txt", now, turnOnFan, turnOffFan);
+    processSchedules("/light_schedule.txt", now, turnOnLight, turnOffLight);
+    
+    // Process all water pump schedules
+    processSchedules("/waterPump1_schedule.txt", now, turnOnWaterPump, turnOffWaterPump);
+    processSchedules("/waterPump2_schedule.txt", now, turnOnWaterPump, turnOffWaterPump);
+    processSchedules("/waterPump3_schedule.txt", now, turnOnWaterPump, turnOffWaterPump);
+
+    processSchedules("/fertilizerPump_schedule.txt", now, turnOnFertilizerPump, turnOffFertilizerPump);
 }
 
 
-  
 
-  // save the reading. Next time through the loop, it'll be the lastButtonState:
-  // lastButtonState = reading;
-// }
-// void manageSchedules(const DateTime& now) {
-//   // LED Light Schedule
-//     if (!isAutoMode) return; // Skip schedules in Manual mode
-  
-//   if ((now.hour() == 6 && now.minute() >= 25) || (now.hour() > 6 && now.hour() < 24)) {
-//     turnOnLight();
-//   } else if (now.hour() == 0) {
-//     turnOffLight();
-//   }
 
-//   // Water Pump Schedule
-//     if ((now.hour() == 5 && now.minute() >= 30 && now.minute() < 43) || 
-//       (now.hour() == 19 && now.minute() >= 30 && now.minute() < 43)|| 
-//       (now.hour() == 22 && now.minute() >= 30 && now.minute() < 43)) {
-//     turnOnWaterPump();
-//   }
-  
-//   // Note: The turnOffWaterPump is called automatically after 780 seconds by the timer
-
-//   // Fertilizer Pump Schedule (assuming Monday is day 1)
-//   if (now.dayOfTheWeek() == 1 && now.hour() == 8 && now.minute() == 0 && now.second() < 15) {
-//     turnOnFertilizerPump();
-//   }
-//   // Note: The turnOffFertilizerPump is called automatically after 15 seconds by the timer
-//     // Fan Control Logic
-//     turnOnFan();
-//   if (digitalRead(ledPin) == LOW) { // LED is off
-//     ledcWrite(lightPwmChannel, 25); // Dim fan to 10% (approx. 25/255)
-//   }
-  
-//   // if (temperature > 25.0) {
-//   //   ledcWrite(fanPwmChannel, 255); // Increase fan to 100%
-//   // } else {
-//   //   ledcWrite(fanPwmChannel, 128); // Normal operation at 50% (approx. 128/255)
-//   // }
-
-// }
+// Print the statuses of the peripherals
 void printPeripheralStatuses() {
   unsigned long currentTime = millis();
   if (currentTime - lastStatusPrintTime >= statusPrintInterval) {
@@ -1016,7 +1190,7 @@ void turnOnFertilizerPump(){
   digitalWrite(fertilizerPumpPin,HIGH);
   isFertilizerPumpOn=true;
   // Serial.println("Fertilizer pump turned on");
-  Alarm.timerOnce(15, turnOffFertilizerPump);    
+  // Alarm.timerOnce(15, turnOffFertilizerPump);    
 
 }
 void turnOffFertilizerPump(){
@@ -1031,7 +1205,7 @@ void turnOnWaterPump(){
   digitalWrite(waterPumpPin,HIGH);
     isWaterPumpOn = true;
   // Serial.println("Water pump turned on");
-  Alarm.timerOnce(780, turnOffWaterPump);            // called once after 10 seconds
+  // Alarm.timerOnce(780, turnOffWaterPump);            // called once after 10 seconds
 }
 void turnOffWaterPump(){
   
