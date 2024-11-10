@@ -364,16 +364,16 @@ const char index_html[] PROGMEM = R"rawliteral(
 
 
     <!-- Fertilizer Pump input fields -->
-    <div id="fertilizerFields" class="input-fields">
-      <label for="fertilizerDay">Day:</label>
-      <input type="number" id="fertilizerDay" name="day" min="1" max="7"><br>
-      <label for="fertilizerOnHour">On Hour:</label>
-      <input type="number" id="fertilizerOnHour" name="onHour" min="0" max="23"><br>
-      <label for="fertilizerOnMinute">On Minute:</label>
-      <input type="number" id="fertilizerOnMinute" name="onMinute" min="0" max="59"><br>
-      <label for="fertilizerDuration">Duration (seconds):</label>
-      <input type="number" id="fertilizerDuration" name="duration" min="1"><br>
-    </div>
+  <div id="fertilizerFields" class="input-fields">
+    <label for="fertilizerDate">Select Date:</label>
+    <input type="date" id="fertilizerDate" name="date"><br>
+    <label for="fertilizerOnHour">On Hour:</label>
+    <input type="number" id="fertilizerOnHour" name="onHour" min="0" max="23"><br>
+    <label for="fertilizerOnMinute">On Minute:</label>
+    <input type="number" id="fertilizerOnMinute" name="onMinute" min="0" max="59"><br>
+    <label for="fertilizerDuration">Duration (seconds):</label>
+    <input type="number" id="fertilizerDuration" name="duration" min="1"><br>
+  </div>
 
     <input type="button" value="Save Schedule" onclick="saveSchedule()">
   </form>
@@ -444,12 +444,14 @@ function saveSchedule() {
     params += `&onHour=${document.getElementById("waterOnHour").value}`;
     params += `&onMinute=${document.getElementById("waterOnMinute").value}`;
     params += `&duration=${document.getElementById("waterDuration").value}`;
-  } else if (device === 'fertilizerPump') {
-    params += `&day=${document.getElementById("fertilizerDay").value}`;
+  } else  if (device === 'fertilizerPump') {
+    var date = new Date(document.getElementById("fertilizerDate").value);
+    var dayOfWeek = date.getUTCDay(); // Get the day of the week (0 = Sunday, 1 = Monday, etc.)
+    params += `&day=${dayOfWeek}`;
     params += `&onHour=${document.getElementById("fertilizerOnHour").value}`;
     params += `&onMinute=${document.getElementById("fertilizerOnMinute").value}`;
-    params += `&duration=${document.getElementById("fertilizerDuration").value}`;
-  }
+    params += `&duration=${document.getElementById("fertilizerDuration").value}`; // Duration in seconds
+  } 
 
   var xhr = new XMLHttpRequest();
   xhr.open("GET", "/set-schedule?" + params, true);
@@ -473,16 +475,16 @@ function loadSchedule() {
       var schedule = xhr.responseText.split(',');
 
       if (device.startsWith("waterPump")) {
-        // Display the schedule for water pumps
+        // Display the schedule for water pumps in minutes
         if (schedule.length === 3) {
           document.getElementById("currentSchedule").innerText = `On: ${schedule[0]}:${schedule[1]}, Duration: ${schedule[2]} minutes`;
         } else {
           document.getElementById("currentSchedule").innerText = "No schedule found for water pump.";
         }
       } else if (device === "fertilizerPump") {
-        // Display the schedule for fertilizer pump
+        // Display the schedule for the fertilizer pump in seconds
         if (schedule.length === 4) {
-          document.getElementById("currentSchedule").innerText = `Day: ${schedule[0]}, On: ${schedule[1]}:${schedule[2]}, Duration: ${schedule[3]} minutes`;
+          document.getElementById("currentSchedule").innerText = `Day: ${schedule[0]}, On: ${schedule[1]}:${schedule[2]}, Duration: ${schedule[3]} seconds`;
         } else {
           document.getElementById("currentSchedule").innerText = "No schedule found for fertilizer pump.";
         }
@@ -502,10 +504,23 @@ function loadSchedule() {
 }
 
 
+
 window.onload = function() {
+  // Request the current mode state from the server
+  var xhr = new XMLHttpRequest();
+  xhr.open("GET", "/get-current-mode", true);
+  xhr.onload = function() {
+    if (xhr.status === 200) {
+      var currentMode = xhr.responseText.trim(); // Ensure to trim any whitespace
+      document.getElementById("modeToggle").checked = (currentMode === "auto");
+    }
+  };
+  xhr.send();
+
   loadSchedule();
   showFields(); // Ensure the correct input fields are displayed based on the initial selection
 };
+
 
 // Load the schedule whenever the dropdown selection changes
 document.getElementById("deviceSelect").addEventListener("change", function() {
@@ -957,6 +972,9 @@ server.on("/get-schedule", HTTP_GET, [](AsyncWebServerRequest *request) {
 });
 
 
+server.on("/get-current-mode", HTTP_GET, [](AsyncWebServerRequest *request) {
+  request->send(200, "text/plain", isAutoMode ? "auto" : "manual");
+});
 
 
 // Toggle fertilizer pump
@@ -1008,6 +1026,8 @@ server.on("/toggle-fertilizer", HTTP_GET, [] (AsyncWebServerRequest *request) {
 
 void manageSchedules(const DateTime& now);
 void printPeripheralStatuses();
+
+
 unsigned long lastStatusPrintTime = 0; // Tracks the last time statuses were printed
 const unsigned long statusPrintInterval = 60000; // Interval to print status (60000 ms = 1 minute)
 bool isFanOn = false;
@@ -1065,6 +1085,8 @@ void processSchedules(String filePath, const DateTime& now, void (*turnOn)(), vo
     Serial.println("Processing schedule: " + schedule);
 
     int onHour, onMinute, offHour, offMinute, duration;
+    static bool isFertilizerPumpActive = false;
+
     if (filePath.endsWith("light_schedule.txt") || filePath.endsWith("fan_schedule.txt")) {
       sscanf(schedule.c_str(), "%d,%d,%d,%d", &onHour, &onMinute, &offHour, &offMinute);
       Serial.printf("Parsed schedule for %s: On - %02d:%02d, Off - %02d:%02d\n", filePath.c_str(), onHour, onMinute, offHour, offMinute);
@@ -1095,21 +1117,22 @@ void processSchedules(String filePath, const DateTime& now, void (*turnOn)(), vo
       } else {
         Serial.println("Outside active period for water pump.");
       }
-    }else if (filePath.endsWith("fertilizerPump_schedule.txt")) {
-      int day;
-      sscanf(schedule.c_str(), "%d,%d,%d,%d", &day, &onHour, &onMinute, &duration);
-      Serial.printf("Parsed schedule for fertilizer pump: Day - %d, On - %02d:%02d, Duration - %d seconds\n", day, onHour, onMinute, duration);
-      Serial.printf("Current time: Day - %d, Time - %02d:%02d:%02d\n", now.dayOfTheWeek(), now.hour(), now.minute(), now.second());
+    } else if (filePath.endsWith("fertilizerPump_schedule.txt")) {
+    int day;
+    sscanf(schedule.c_str(), "%d,%d,%d,%d", &day, &onHour, &onMinute, &duration);
+    Serial.printf("Parsed schedule for fertilizer pump: Day - %d, On - %02d:%02d, Duration - %d seconds\n", day, onHour, onMinute, duration);
+    Serial.printf("Current time: Day - %d, Time - %02d:%02d:%02d\n", now.dayOfTheWeek(), now.hour(), now.minute(), now.second());
 
-      if (now.dayOfTheWeek() == day && now.hour() == onHour && now.minute() == onMinute) {
+    if (now.dayOfTheWeek() == day && now.hour() == onHour && now.minute() == onMinute && !isFertilizerPumpActive) {
         Serial.println("Turning on the fertilizer pump.");
         turnOn();
+        isFertilizerPumpActive = true; // Set the active flag
         Serial.printf("Setting timer to turn off after %d seconds.\n", duration);
-        Alarm.timerOnce(duration, turnOff);
-      } else {
+        Alarm.timerOnce(duration, turnOffFertilizerPump); // Use the function pointer
+    } else {
         Serial.println("Outside active period for fertilizer pump.");
-      }
     }
+}
   } else {
     Serial.println("No schedule found or failed to read.");
   }
@@ -1118,8 +1141,11 @@ void processSchedules(String filePath, const DateTime& now, void (*turnOn)(), vo
 
 // Modify the manageSchedules function to handle multiple schedules
 void manageSchedules(const DateTime& now) {
-    if (!isAutoMode) {
-        return; // Skip schedules in manual mode
+   
+
+     if (!isAutoMode) {
+        Serial.println("Manual mode active: Skipping schedule management.");
+        return; // Skip processing schedules in Manual mode
     }
 
     processSchedules("/fan_schedule.txt", now, turnOnFan, turnOffFan);
