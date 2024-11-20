@@ -150,7 +150,77 @@
  
 
   </div>
+
+<div class="card">
+  <h4>Schedule Settings</h4>
+  <form id="scheduleForm">
+    <label for="deviceSelect">Select Device:</label>
+    <select id="deviceSelect" name="device" onchange="showFields()">
+      <option value="light">Light</option>
+      <option value="fan">Fan</option>
+      <option value="waterPump1">Water Pump Schedule 1</option>
+      <option value="waterPump2">Water Pump Schedule 2</option>
+      <option value="waterPump3">Water Pump Schedule 3</option>
+      <option value="fertilizerPump">Fertilizer Pump</option>
+    </select><br><br>
+
+    <!-- Light input fields -->
+    <div id="lightFields" class="input-fields">
+      <label for="lightOnHour">On Hour:</label>
+      <input type="number" id="lightOnHour" name="onHour" min="0" max="23"><br>
+      <label for="lightOnMinute">On Minute:</label>
+      <input type="number" id="lightOnMinute" name="onMinute" min="0" max="59"><br>
+      <label for="lightOffHour">Off Hour:</label>
+      <input type="number" id="lightOffHour" name="offHour" min="0" max="23"><br>
+      <label for="lightOffMinute">Off Minute:</label>
+      <input type="number" id="lightOffMinute" name="offMinute" min="0" max="59"><br>
+    </div>
+
+    <!-- Fan input fields -->
+    <div id="fanFields" class="input-fields">
+      <label for="fanOnHour">On Hour:</label>
+      <input type="number" id="fanOnHour" name="onHour" min="0" max="23"><br>
+      <label for="fanOnMinute">On Minute:</label>
+      <input type="number" id="fanOnMinute" name="onMinute" min="0" max="59"><br>
+      <label for="fanOffHour">Off Hour:</label>
+      <input type="number" id="fanOffHour" name="offHour" min="0" max="23"><br>
+      <label for="fanOffMinute">Off Minute:</label>
+      <input type="number" id="fanOffMinute" name="offMinute" min="0" max="59"><br>
+    </div>
+
+<!-- Water Pump input fields -->
+<div id="waterPumpFields" class="input-fields">
+  <label for="waterOnHour">On Hour:</label>
+  <input type="number" id="waterOnHour" name="onHour" min="0" max="23"><br>
+  <label for="waterOnMinute">On Minute:</label>
+  <input type="number" id="waterOnMinute" name="onMinute" min="0" max="59"><br>
+  <label for="waterDuration">Duration (minutes):</label>
+  <input type="number" id="waterDuration" name="duration" min="1"><br>
+</div>
+
+
+    <!-- Fertilizer Pump input fields -->
+  <div id="fertilizerFields" class="input-fields">
+    <label for="fertilizerDate">Select Date:</label>
+    <input type="date" id="fertilizerDate" name="date"><br>
+    <label for="fertilizerOnHour">On Hour:</label>
+    <input type="number" id="fertilizerOnHour" name="onHour" min="0" max="23"><br>
+    <label for="fertilizerOnMinute">On Minute:</label>
+    <input type="number" id="fertilizerOnMinute" name="onMinute" min="0" max="59"><br>
+    <label for="fertilizerDuration">Duration (seconds):</label>
+    <input type="number" id="fertilizerDuration" name="duration" min="1"><br>
+  </div>
+
+    <input type="button" value="Save Schedule" onclick="saveSchedule()">
+  </form>
+  <div id="scheduleDisplay">
+    <h4>Current Schedule:</h4>
+    <p id="currentSchedule">No schedule selected</p>
+  </div>
+</div>
 <script>
+
+
 function logoutButton() {
   var xhr = new XMLHttpRequest();
   xhr.open("GET", "/logout", true);
@@ -182,6 +252,117 @@ function toggleMode(element) {
   };
   xhr.send();
 }
+
+function showFields() {
+  document.querySelectorAll('.input-fields').forEach(function(field) {
+    field.style.display = 'none';
+  });
+  var device = document.getElementById("deviceSelect").value;
+  if (device.includes("waterPump")) {
+    document.getElementById("waterPumpFields").style.display = 'block';
+  } else if (device === "fertilizerPump") {
+    document.getElementById("fertilizerFields").style.display = 'block';
+  } else {
+    document.getElementById(device + "Fields").style.display = 'block';
+  }
+}
+
+function saveSchedule() {
+  var device = document.getElementById("deviceSelect").value;
+  var params = `device=${device}`;
+
+  if (device === 'light' || device === 'fan') {
+    params += `&onHour=${document.getElementById(device + "OnHour").value}`;
+    params += `&onMinute=${document.getElementById(device + "OnMinute").value}`;
+    params += `&offHour=${document.getElementById(device + "OffHour").value}`;
+    params += `&offMinute=${document.getElementById(device + "OffMinute").value}`;
+  } else if (device.includes('waterPump')) {
+    params += `&onHour=${document.getElementById("waterOnHour").value}`;
+    params += `&onMinute=${document.getElementById("waterOnMinute").value}`;
+    params += `&duration=${document.getElementById("waterDuration").value}`;
+  } else  if (device === 'fertilizerPump') {
+    var date = new Date(document.getElementById("fertilizerDate").value);
+    var dayOfWeek = date.getUTCDay(); // Get the day of the week (0 = Sunday, 1 = Monday, etc.)
+    params += `&day=${dayOfWeek}`;
+    params += `&onHour=${document.getElementById("fertilizerOnHour").value}`;
+    params += `&onMinute=${document.getElementById("fertilizerOnMinute").value}`;
+    params += `&duration=${document.getElementById("fertilizerDuration").value}`; // Duration in seconds
+  } 
+
+  var xhr = new XMLHttpRequest();
+  xhr.open("GET", "/set-schedule?" + params, true);
+  xhr.onload = function() {
+    if (xhr.status === 200) {
+      alert("Schedule saved!");
+      loadSchedule();
+    } else {
+      alert("Failed to save schedule: " + xhr.responseText);
+    }
+  };
+  xhr.send();
+}
+
+function loadSchedule() {
+  var device = document.getElementById("deviceSelect").value;
+  var xhr = new XMLHttpRequest();
+  xhr.open("GET", `/get-schedule?device=${device}`, true);
+  xhr.onload = function() {
+    if (xhr.status === 200) {
+      var schedule = xhr.responseText.split(',');
+
+      if (device.startsWith("waterPump")) {
+        // Display the schedule for water pumps in minutes
+        if (schedule.length === 3) {
+          document.getElementById("currentSchedule").innerText = `On: ${schedule[0]}:${schedule[1]}, Duration: ${schedule[2]} minutes`;
+        } else {
+          document.getElementById("currentSchedule").innerText = "No schedule found for water pump.";
+        }
+      } else if (device === "fertilizerPump") {
+        // Display the schedule for the fertilizer pump in seconds
+        if (schedule.length === 4) {
+          document.getElementById("currentSchedule").innerText = `Day: ${schedule[0]}, On: ${schedule[1]}:${schedule[2]}, Duration: ${schedule[3]} seconds`;
+        } else {
+          document.getElementById("currentSchedule").innerText = "No schedule found for fertilizer pump.";
+        }
+      } else {
+        // Display the schedule for light or fan
+        if (schedule.length === 4) {
+          document.getElementById("currentSchedule").innerText = `On: ${schedule[0]}:${schedule[1]}, Off: ${schedule[2]}:${schedule[3]}`;
+        } else {
+          document.getElementById("currentSchedule").innerText = "No schedule found for light/fan.";
+        }
+      }
+    } else {
+      document.getElementById("currentSchedule").innerText = "No schedule found.";
+    }
+  };
+  xhr.send();
+}
+
+
+
+window.onload = function() {
+  // Request the current mode state from the server
+  var xhr = new XMLHttpRequest();
+  xhr.open("GET", "/get-current-mode", true);
+  xhr.onload = function() {
+    if (xhr.status === 200) {
+      var currentMode = xhr.responseText.trim(); // Ensure to trim any whitespace
+      document.getElementById("modeToggle").checked = (currentMode === "auto");
+    }
+  };
+  xhr.send();
+
+  loadSchedule();
+  showFields(); // Ensure the correct input fields are displayed based on the initial selection
+};
+
+
+// Load the schedule whenever the dropdown selection changes
+document.getElementById("deviceSelect").addEventListener("change", function() {
+  loadSchedule(); // Load schedule for the newly selected device
+  showFields(); // Display the appropriate input fields
+});
 
 function adjustFanSpeed(element) {
   var xhr = new XMLHttpRequest();
