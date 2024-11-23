@@ -712,6 +712,14 @@ void setup(){
   }
   Serial.println("LittleFS mounted successfully");
 
+
+    WiFi.mode(WIFI_AP);
+  WiFi.softAP(ssid, password);
+  Serial.println("Access Point Started");
+  Serial.print("IP Address: ");
+  Serial.println(WiFi.softAPIP());
+
+
   // Check if this is the first run after code upload
   // Check if this is the first run after code upload
   if (!codeUploaded) {
@@ -789,12 +797,7 @@ pinMode(fertilizerPumpPin, OUTPUT);
   //   Serial.println("Connecting to WiFi..");
   // }
 
-   WiFi.mode(WIFI_AP);
-  WiFi.softAP(ssid, password);
-  Serial.println("Access Point Started");
-  Serial.print("IP Address: ");
-  Serial.println(WiFi.softAPIP());
-
+ 
 
   //  timeClient.begin();
 
@@ -1081,34 +1084,47 @@ void appendSchedule(fs::FS &fs, const char *path, const char *message) {
 void processSchedules(String filePath, const DateTime& now, void (*turnOn)(), void (*turnOff)()) {
   String schedule = readFile(LittleFS, filePath.c_str());
 
+  
+
   if (schedule.length() > 0) {
-    Serial.println("Processing schedule: " + schedule);
+    // Serial.println("Processing schedule: " + schedule);
 
     int onHour, onMinute, offHour, offMinute, duration;
     static bool isFertilizerPumpActive = false;
+    
 
     if (filePath.endsWith("light_schedule.txt") || filePath.endsWith("fan_schedule.txt")) {
+
+      String device_name = "";
+
+      if (filePath.endsWith("light_schedule.txt")) {
+          device_name = "lights";
+      } else if (filePath.endsWith("fan_schedule.txt")) {
+          device_name = "fan";
+      }
+
+
       sscanf(schedule.c_str(), "%d,%d,%d,%d", &onHour, &onMinute, &offHour, &offMinute);
-      Serial.printf("Parsed schedule for %s: On - %02d:%02d, Off - %02d:%02d\n", filePath.c_str(), onHour, onMinute, offHour, offMinute);
-      Serial.printf("Current time: %02d:%02d:%02d\n", now.hour(), now.minute(), now.second());
+      // Serial.printf("Parsed schedule for %s: On - %02d:%02d, Off - %02d:%02d\n", filePath.c_str(), onHour, onMinute, offHour, offMinute);
+      // Serial.printf("Current time: %02d:%02d:%02d\n", now.hour(), now.minute(), now.second());
 
       // Check if current time is within the active period
       bool isActive = (now.hour() > onHour || (now.hour() == onHour && now.minute() >= onMinute)) &&
                       (now.hour() < offHour || (now.hour() == offHour && now.minute() < offMinute));
 
       if (isActive) {
-        Serial.println("Within active period: Turning on the device.");
+        Serial.printf("Within active period: Turning on the %s.",device_name.c_str());
         turnOn();
       } else if (now.hour() == offHour && now.minute() == offMinute) {
-        Serial.println("Reached off time: Turning off the device.");
+        Serial.printf("Reached off time: Turning off the %s.",device_name.c_str());
         turnOff();
       } else {
-        Serial.println("Outside active period for lights/fan.");
+        Serial.printf("Outside active period for  %s.",device_name.c_str());
       }
     } else if (filePath.startsWith("/waterPump")) {
       sscanf(schedule.c_str(), "%d,%d,%d", &onHour, &onMinute, &duration);
-      Serial.printf("Parsed schedule for %s: On - %02d:%02d, Duration - %d minutes\n", filePath.c_str(), onHour, onMinute, duration);
-      Serial.printf("Current time: %02d:%02d:%02d\n", now.hour(), now.minute(), now.second());
+      // Serial.printf("Parsed schedule for %s: On - %02d:%02d, Duration - %d minutes\n", filePath.c_str(), onHour, onMinute, duration);
+      // Serial.printf("Current time: %02d:%02d:%02d\n", now.hour(), now.minute(), now.second());
 
       if (now.hour() == onHour && now.minute() == onMinute) {
         Serial.println("Within active period: Turning on the water pump.");
@@ -1120,8 +1136,8 @@ void processSchedules(String filePath, const DateTime& now, void (*turnOn)(), vo
     } else if (filePath.endsWith("fertilizerPump_schedule.txt")) {
     int day;
     sscanf(schedule.c_str(), "%d,%d,%d,%d", &day, &onHour, &onMinute, &duration);
-    Serial.printf("Parsed schedule for fertilizer pump: Day - %d, On - %02d:%02d, Duration - %d seconds\n", day, onHour, onMinute, duration);
-    Serial.printf("Current time: Day - %d, Time - %02d:%02d:%02d\n", now.dayOfTheWeek(), now.hour(), now.minute(), now.second());
+    // Serial.printf("Parsed schedule for fertilizer pump: Day - %d, On - %02d:%02d, Duration - %d seconds\n", day, onHour, onMinute, duration);
+    // Serial.printf("Current time: Day - %d, Time - %02d:%02d:%02d\n", now.dayOfTheWeek(), now.hour(), now.minute(), now.second());
 
     if (now.dayOfTheWeek() == day && now.hour() == onHour && now.minute() == onMinute && !isFertilizerPumpActive) {
         Serial.println("Turning on the fertilizer pump.");
@@ -1136,12 +1152,13 @@ void processSchedules(String filePath, const DateTime& now, void (*turnOn)(), vo
   } else {
     Serial.println("No schedule found or failed to read.");
   }
+
 }
 
 
 // Modify the manageSchedules function to handle multiple schedules
 void manageSchedules(const DateTime& now) {
-   
+   Serial.printf("Current time: Day - %d, Time - %02d:%02d:%02d\n", now.dayOfTheWeek(), now.hour(), now.minute(), now.second());
 
      if (!isAutoMode) {
         Serial.println("Manual mode active: Skipping schedule management.");
@@ -1157,6 +1174,11 @@ void manageSchedules(const DateTime& now) {
     processSchedules("/waterPump3_schedule.txt", now, turnOnWaterPump, turnOffWaterPump);
 
     processSchedules("/fertilizerPump_schedule.txt", now, turnOnFertilizerPump, turnOffFertilizerPump);
+
+    
+  Serial.println("");
+  Serial.println("=======================================================");
+  Serial.println("");
 }
 
 
@@ -1244,7 +1266,7 @@ void turnOffWaterPump(){
 
 // Function to read content from a file
 String readFile(fs::FS &fs, const char * path) {
-  Serial.printf("Reading file: %s\r\n", path);
+  // Serial.printf("Reading file: %s\r\n", path);
   File file = fs.open(path, "r");
   if (!file || file.isDirectory()) {
     Serial.println("- empty file or failed to open file");
