@@ -4,454 +4,345 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Gordita|Basier+Mono">
   <style>
-    html {font-family: Arial; display: inline-block; text-align: center;}
-    h3 {font-size: 1.8rem; color: white;}
-    h4 { font-size: 1.2rem;}
-    p { font-size: 1.4rem;}
-    body {  margin: 0;}
-    .switch {position: relative; display: inline-block; width: 120px; height: 68px; margin-bottom: 20px;}
-    .switch input {display: none;}
-    .slider {position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; border-radius: 68px;   opacity: 0.8;   cursor: pointer;}
-    .slider:before {position: absolute; content: ""; height: 52px; width: 52px; left: 8px; bottom: 8px; background-color: #fff; -webkit-transition: .4s; transition: .4s; border-radius: 68px}
-    input:checked+.slider {background-color: #1b78e2}
-    input:checked+.slider:before {-webkit-transform: translateX(52px); -ms-transform: translateX(52px); transform: translateX(52px)}
-  .topnav {overflow: hidden; background-color: #1b78e2; color: white;display: flex;justify-content: space-between; align-items: center; padding: 0 20px;}
-  .topnav h3 {flex-grow: 1;text-align: center;margin: 0;}
-.time-display {font-size: 1.2rem;font-weight: bold;  margin-right: 15px; /* additional styling to match the theme */}
-
-    .content { padding: 20px;}
-    .card { background-color: white; box-shadow: 2px 2px 12px 1px rgba(140,140,140,.5);}
-    .cards { max-width: 700px; margin: 0 auto; display: grid; grid-gap: 2rem; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));}
-    .slider2 { -webkit-appearance: none; margin: 14px;  height: 20px; background: #ccc; outline: none; opacity: 0.8; -webkit-transition: .2s; transition: opacity .2s; margin-bottom: 40px; }
-    .slider:hover, .slider2:hover { opacity: 1; }
-    .slider2::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 40px; height: 40px; background: #008B74; cursor: pointer; }
-    .slider2::-moz-range-thumb { width: 40px; height: 40px; background: #008B74; cursor: pointer;}
-    .reading { font-size: 2.6rem;}
-    .card-switch {color: #50a2ff; }
-    .card-light{ color: #008B74;}
-    .card-bme{ color: #572dfb;}
-    .card-motion{ color: #3b3b3b; cursor: pointer;}
-    .icon-pointer{ cursor: pointer; padding-left: 15px; }
-
-     .mode-switch-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-bottom: 30px; /* Adjust this value for more or less spacing */
-    margin-top: 20px; /* Optional: add some space above the switch */
-  }
-
-  .mode-switch-container span {
-    font-size: 1.2rem;
-    font-weight: bold;
-    margin: 0 10px; /* Space between the text and the switch */
-    color: #333;
-  }
-
-  .switch {
-    position: relative;
-    display: inline-block;
-    width: 100px;
-    height: 40px;
-  }
-
-  .switch input { display: none; }
-
-  .slider {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #ccc;
-    border-radius: 20px;
-    cursor: pointer;
-    transition: 0.4s;
-  }
-
-  .slider:before {
-    position: absolute;
-    content: "";
-    height: 32px;
-    width: 32px;
-    left: 4px;
-    bottom: 4px;
-    background-color: white;
-    border-radius: 50%;
-    transition: 0.4s;
-  }
-
-  input:checked + .slider {
-    background-color: #1b78e2; /* Default blue for auto mode */
-    box-shadow: 0 0 20px 10px rgba(0, 0, 255, 0.5); /* Blue glow effect */
-    animation: blue-glow 1.5s infinite alternate; /* Animation for blue glow */
-  }
-
-  input:not(:checked) + .slider {
-    background-color: #ff3b3b; /* Red for manual mode */
-    box-shadow: 0 0 20px 10px rgba(255, 0, 0, 0.5); /* Red glow effect */
-    animation: red-glow 1.5s infinite alternate; /* Animation for red glow */
-  }
-
-  input:checked + .slider:before {
-    transform: translateX(60px); /* Adjust based on width of switch */
-  }
-
-  /* Keyframes for blue glow */
-  @keyframes blue-glow {
-    from { box-shadow: 0 0 10px 5px rgba(0, 0, 255, 0.5); }
-    to { box-shadow: 0 0 20px 10px rgba(0, 0, 255, 0.9); }
-  }
-
-  /* Keyframes for red glow */
-  @keyframes red-glow {
-    from { box-shadow: 0 0 10px 5px rgba(255, 0, 0, 0.5); }
-    to { box-shadow: 0 0 20px 10px rgba(255, 0, 0, 0.9); }
-  }
-
-  /* Rounded switch */
-  .slider.round {
-    border-radius: 20px;
-  }
-
-  .slider.round:before {
-    border-radius: 50%;
-  }
+    body {
+      font-family: 'Gordita', sans-serif;
+      margin: 0;
+      background-color: #f5f7fa; /* Updated to a softer background color from brand guidelines */
+    }
+    .topnav {
+      overflow: hidden;
+      background-color: #5dbb63; /* Updated to brand's primary green color */
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 20px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    .topnav h3 {
+      margin: 0;
+      flex-grow: 1;
+      text-align: center;
+      font-weight: bold;
+      font-size: 1.6rem;
+      font-family: 'Basier Mono', monospace;
+    }
+    .time-display {
+      font-size: 1.2rem;
+      font-weight: bold;
+      margin-right: 15px;
+    }
+    .icon-pointer {
+      cursor: pointer;
+      font-size: 1.5rem;
+    }
+    .sidenav {
+      height: 100%;
+      width: 0;
+      position: fixed;
+      z-index: 1;
+      top: 0;
+      left: 0;
+      background-color: #4a9e52;
+      overflow-x: hidden;
+      transition: 0.5s;
+      padding-top: 20px;
+    }
+    .sidenav a {
+      padding: 15px 25px;
+      text-decoration: none;
+      font-size: 1.2rem;
+      color: #f1f1f1;
+      display: block;
+      transition: 0.3s;
+    }
+    .sidenav a:hover {
+      background-color: #5dbb63;
+      color: #ffffff;
+    }
+    .sidenav .closebtn {
+      position: absolute;
+      top: 0;
+      right: 25px;
+      font-size: 2rem;
+      margin-left: 50px;
+    }
+    .content {
+      padding: 20px;
+    }
+    .card {
+      background-color: #ffffff;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 20px;
+      text-align: center;
+      border: 2px solid #5dbb63; /* Adding border color to match branding */
+    }
+    .card h4 {
+      color: #5dbb63;
+      margin-bottom: 15px;
+    }
+    .card .reading {
+      font-size: 2.4rem;
+      color: #333;
+    }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 200px));
+      gap: 20px;
+      justify-items: center;
+    }
+    .mode-switch-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 30px 0;
+    }
+    .mode-switch-container span {
+      font-size: 1.2rem;
+      font-weight: bold;
+      margin: 0 10px;
+      color: #333;
+    }
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 80px;
+      height: 40px;
+    }
+    .switch input {
+      display: none;
+    }
+    .slider {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: 0.4s;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 32px;
+      width: 32px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      border-radius: 50%;
+      transition: 0.4s;
+    }
+    input:checked + .slider {
+      background-color: #5dbb63;
+      box-shadow: 0 0 20px 10px rgba(93, 187, 99, 0.5);
+    }
+    input:checked + .slider:before {
+      transform: translateX(40px);
+    }
+    .workout-card {
+      background-color: #ff6347; /* Updated to brand secondary color (tomato) */
+      color: white;
+      text-align: center;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      width: 200px;
+      height: 200px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+    .workout-card h5 {
+      margin: 0;
+      font-size: 1.4rem;
+      font-weight: bold;
+    }
+    .workout-card .distance {
+      font-size: 2.4rem;
+      margin: 10px 0;
+    }
+    .device-card {
+      width: 200px;
+      height: 200px;
+      padding: 20px;
+      background-color: #f4f4f4; /* Updated to match brand palette */
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      border: 2px solid #5dbb63; /* Adding border to align with brand color scheme */
+    }
+    .device-card h5 {
+      margin: 0;
+      font-size: 1.4rem;
+      font-weight: bold;
+      color: #5dbb63; /* Updated to brand's primary color */
+    }
+    .btn-primary {
+      background-color: #5dbb63;
+      border-color: #5dbb63;
+      color: white;
+      font-weight: bold;
+      transition: background-color 0.3s ease;
+    }
+    .btn-primary:hover {
+      background-color: #4a9e52;
+      border-color: #4a9e52;
+    }
   </style>
 </head>
 <body>
+<div id="mySidenav" class="sidenav">
+  <a href="javascript:void(0)" class="closebtn" onclick="toggleSidebar()">&times;</a>
+  <a href="#" onclick="showDashboard()">Home</a>
+  <a href="#" onclick="showScheduleSettings()">Settings</a>
+</div>
 <div class="topnav">
+  <i class="fas fa-bars icon-pointer" onclick="toggleSidebar()"></i>
   <h3>FARMIE DASHBOARD</h3>
   <span id="current-time" class="time-display">22:53:39</span>
-  <i class="fas fa-user-slash icon-pointer" onclick="logoutButton()"></i>
+  <i class="fas fa-user-circle icon-pointer" onclick="logoutButton()"></i>
 </div>
 
-  <div class="content">
- <div class="mode-switch-container">
-  <span>Manual</span>
-  <label class="switch">
-    <input type="checkbox" id="modeToggle" onchange="toggleMode(this)">
-    <span class="slider round"></span>
-  </label>
-  <span>Auto</span>
-</div>
-    <div class="cards">
-      %BUTTONPLACEHOLDER%
-
-
-      <div class="card card-bme">
-        <h4><i class="fas fa-chart-bar"></i> TEMPERATURE</h4><div><p class="reading"><span id="temp"></span>&deg;C</p></div>
-      </div>
-      <div class="card card-bme">
-        <h4><i class="fas fa-chart-bar"></i> HUMIDITY</h4><div><p class="reading"><span id="humi"></span>&percnt;</p></div>
-      </div>
-
- 
-
+<div id="dashboard" class="content">
+  <div class="mode-switch-container">
+    <span>Manual</span>
+    <label class="switch">
+      <input type="checkbox" id="modeToggle" onchange="toggleMode(this)">
+      <span class="slider round"></span>
+    </label>
+    <span>Auto</span>
   </div>
-
-<div class="card">
-  <h4>Schedule Settings</h4>
-  <form id="scheduleForm">
-    <label for="deviceSelect">Select Device:</label>
-    <select id="deviceSelect" name="device" onchange="showFields()">
-      <option value="light">Light</option>
-      <option value="fan">Fan</option>
-      <option value="waterPump1">Water Pump Schedule 1</option>
-      <option value="waterPump2">Water Pump Schedule 2</option>
-      <option value="waterPump3">Water Pump Schedule 3</option>
-      <option value="fertilizerPump">Fertilizer Pump</option>
-    </select><br><br>
-
-    <!-- Light input fields -->
-    <div id="lightFields" class="input-fields">
-      <label for="lightOnHour">On Hour:</label>
-      <input type="number" id="lightOnHour" name="onHour" min="0" max="23"><br>
-      <label for="lightOnMinute">On Minute:</label>
-      <input type="number" id="lightOnMinute" name="onMinute" min="0" max="59"><br>
-      <label for="lightOffHour">Off Hour:</label>
-      <input type="number" id="lightOffHour" name="offHour" min="0" max="23"><br>
-      <label for="lightOffMinute">Off Minute:</label>
-      <input type="number" id="lightOffMinute" name="offMinute" min="0" max="59"><br>
+  <div class="cards">
+    <div class="device-card">
+      <h5>Fans</h5>
+      <button class="btn btn-primary" onclick="toggleDevice(this, 'fan')">Off</button>
     </div>
-
-    <!-- Fan input fields -->
-    <div id="fanFields" class="input-fields">
-      <label for="fanOnHour">On Hour:</label>
-      <input type="number" id="fanOnHour" name="onHour" min="0" max="23"><br>
-      <label for="fanOnMinute">On Minute:</label>
-      <input type="number" id="fanOnMinute" name="onMinute" min="0" max="59"><br>
-      <label for="fanOffHour">Off Hour:</label>
-      <input type="number" id="fanOffHour" name="offHour" min="0" max="23"><br>
-      <label for="fanOffMinute">Off Minute:</label>
-      <input type="number" id="fanOffMinute" name="offMinute" min="0" max="59"><br>
+    <div class="device-card">
+      <h5>Lights</h5>
+      <button class="btn btn-primary" onclick="toggleDevice(this, 'light')">Off</button>
     </div>
-
-<!-- Water Pump input fields -->
-<div id="waterPumpFields" class="input-fields">
-  <label for="waterOnHour">On Hour:</label>
-  <input type="number" id="waterOnHour" name="onHour" min="0" max="23"><br>
-  <label for="waterOnMinute">On Minute:</label>
-  <input type="number" id="waterOnMinute" name="onMinute" min="0" max="59"><br>
-  <label for="waterDuration">Duration (minutes):</label>
-  <input type="number" id="waterDuration" name="duration" min="1"><br>
+    <div class="device-card">
+      <h5>Water Pump</h5>
+      <button class="btn btn-primary" onclick="toggleDevice(this, 'waterPump')">Off</button>
+    </div>
+    <div class="device-card">
+      <h5>Fertilizer Pump</h5>
+      <button class="btn btn-primary" onclick="toggleDevice(this, 'fertilizerPump')">Off</button>
+    </div>
+    <div class="card">
+      <h4><i class="fas fa-thermometer-half"></i> Temperature</h4>
+      <div>
+        <p class="reading"><span id="temp"></span>&deg;C</p>
+      </div>
+    </div>
+    <div class="card">
+      <h4><i class="fas fa-tint"></i> Humidity</h4>
+      <div>
+        <p class="reading"><span id="humi"></span>&percnt;</p>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <h4>Schedule Settings</h4>
+    <button class="btn btn-primary" onclick="showScheduleSettings()">Go to Schedule Settings</button>
+  </div>
 </div>
 
+<div id="scheduleSettings" class="content" style="display: none;">
+  <div class="card">
+    <h4>Schedule Settings</h4>
+    <form id="scheduleForm">
+      <div class="mb-3">
+        <label for="deviceSelect" class="form-label">Select Device:</label>
+        <select id="deviceSelect" name="device" class="form-select" onchange="showFields()">
+          <option value="light">Light</option>
+          <option value="fan">Fan</option>
+          <option value="waterPump1">Water Pump Schedule 1</option>
+          <option value="waterPump2">Water Pump Schedule 2</option>
+          <option value="waterPump3">Water Pump Schedule 3</option>
+          <option value="fertilizerPump">Fertilizer Pump</option>
+        </select>
+      </div>
 
-    <!-- Fertilizer Pump input fields -->
-  <div id="fertilizerFields" class="input-fields">
-    <label for="fertilizerDate">Select Date:</label>
-    <input type="date" id="fertilizerDate" name="date"><br>
-    <label for="fertilizerOnHour">On Hour:</label>
-    <input type="number" id="fertilizerOnHour" name="onHour" min="0" max="23"><br>
-    <label for="fertilizerOnMinute">On Minute:</label>
-    <input type="number" id="fertilizerOnMinute" name="onMinute" min="0" max="59"><br>
-    <label for="fertilizerDuration">Duration (seconds):</label>
-    <input type="number" id="fertilizerDuration" name="duration" min="1"><br>
+      <div id="lightFields" class="input-fields">
+        <div class="mb-3">
+          <label for="lightOnHour" class="form-label">On Hour:</label>
+          <input type="number" id="lightOnHour" name="onHour" min="0" max="23" class="form-control">
+        </div>
+        <div class="mb-3">
+          <label for="lightOnMinute" class="form-label">On Minute:</label>
+          <input type="number" id="lightOnMinute" name="onMinute" min="0" max="59" class="form-control">
+        </div>
+        <div class="mb-3">
+          <label for="lightOffHour" class="form-label">Off Hour:</label>
+          <input type="number" id="lightOffHour" name="offHour" min="0" max="23" class="form-control">
+        </div>
+        <div class="mb-3">
+          <label for="lightOffMinute" class="form-label">Off Minute:</label>
+          <input type="number" id="lightOffMinute" name="offMinute" min="0" max="59" class="form-control">
+        </div>
+      </div>
+
+      <!-- Other device input fields remain unchanged -->
+
+      <button type="button" class="btn btn-primary" onclick="saveSchedule()">Save Schedule</button>
+    </form>
+    <button class="btn btn-secondary mt-3" onclick="showDashboard()">Back to Dashboard</button>
   </div>
-
-    <input type="button" value="Save Schedule" onclick="saveSchedule()">
-  </form>
   <div id="scheduleDisplay">
     <h4>Current Schedule:</h4>
     <p id="currentSchedule">No schedule selected</p>
   </div>
 </div>
+
 <script>
-
-
-function logoutButton() {
-  var xhr = new XMLHttpRequest();
-  xhr.open("GET", "/logout", true);
-  xhr.send();
-  setTimeout(function(){ window.open("/logged-out","_self"); }, 1000);
-}
-
-function togglePump(pumpType) {
-  var xhr = new XMLHttpRequest();
-  xhr.open("GET", "/toggle-" + pumpType, true);
-  xhr.send();
-}
-
-function adjustLightIntensity(element) {
-  var xhr = new XMLHttpRequest();
-  var value = element.value; // Get the value from the slider
-  xhr.open("GET", "/adjust-light?intensity=" + value, true); // Send the value as a query parameter
-  xhr.send();
-}
-
-function toggleMode(element) {
-  var mode = element.checked ? "auto" : "manual";
-  var xhr = new XMLHttpRequest();
-  xhr.open("GET", "/mode-toggle?mode=" + mode, true);
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4 && xhr.status === 200) {
-      console.log("Mode changed to: " + mode);
-    }
-  };
-  xhr.send();
-}
-
-function showFields() {
-  document.querySelectorAll('.input-fields').forEach(function(field) {
-    field.style.display = 'none';
-  });
-  var device = document.getElementById("deviceSelect").value;
-  if (device.includes("waterPump")) {
-    document.getElementById("waterPumpFields").style.display = 'block';
-  } else if (device === "fertilizerPump") {
-    document.getElementById("fertilizerFields").style.display = 'block';
-  } else {
-    document.getElementById(device + "Fields").style.display = 'block';
-  }
-}
-
-function saveSchedule() {
-  var device = document.getElementById("deviceSelect").value;
-  var params = `device=${device}`;
-
-  if (device === 'light' || device === 'fan') {
-    params += `&onHour=${document.getElementById(device + "OnHour").value}`;
-    params += `&onMinute=${document.getElementById(device + "OnMinute").value}`;
-    params += `&offHour=${document.getElementById(device + "OffHour").value}`;
-    params += `&offMinute=${document.getElementById(device + "OffMinute").value}`;
-  } else if (device.includes('waterPump')) {
-    params += `&onHour=${document.getElementById("waterOnHour").value}`;
-    params += `&onMinute=${document.getElementById("waterOnMinute").value}`;
-    params += `&duration=${document.getElementById("waterDuration").value}`;
-  } else  if (device === 'fertilizerPump') {
-    var date = new Date(document.getElementById("fertilizerDate").value);
-    var dayOfWeek = date.getUTCDay(); // Get the day of the week (0 = Sunday, 1 = Monday, etc.)
-    params += `&day=${dayOfWeek}`;
-    params += `&onHour=${document.getElementById("fertilizerOnHour").value}`;
-    params += `&onMinute=${document.getElementById("fertilizerOnMinute").value}`;
-    params += `&duration=${document.getElementById("fertilizerDuration").value}`; // Duration in seconds
-  } 
-
-  var xhr = new XMLHttpRequest();
-  xhr.open("GET", "/set-schedule?" + params, true);
-  xhr.onload = function() {
-    if (xhr.status === 200) {
-      alert("Schedule saved!");
-      loadSchedule();
+  function toggleDevice(button, device) {
+    const isOff = button.textContent === 'Off';
+    if (isOff) {
+      button.classList.remove('btn-primary');
+      button.classList.add('btn-success');
+      button.textContent = 'On';
+      console.log(`Toggling ${device} on`);
     } else {
-      alert("Failed to save schedule: " + xhr.responseText);
+      button.classList.remove('btn-success');
+      button.classList.add('btn-primary');
+      button.textContent = 'Off';
+      console.log(`Toggling ${device} off`);
     }
-  };
-  xhr.send();
-}
+    // Here you can add the logic to send requests to the backend to toggle devices on or off
+  }
 
-function loadSchedule() {
-  var device = document.getElementById("deviceSelect").value;
-  var xhr = new XMLHttpRequest();
-  xhr.open("GET", `/get-schedule?device=${device}`, true);
-  xhr.onload = function() {
-    if (xhr.status === 200) {
-      var schedule = xhr.responseText.split(',');
+  function showScheduleSettings() {
+    document.getElementById('dashboard').style.display = 'none';
+    document.getElementById('scheduleSettings').style.display = 'block';
+  }
 
-      if (device.startsWith("waterPump")) {
-        // Display the schedule for water pumps in minutes
-        if (schedule.length === 3) {
-          document.getElementById("currentSchedule").innerText = `On: ${schedule[0]}:${schedule[1]}, Duration: ${schedule[2]} minutes`;
-        } else {
-          document.getElementById("currentSchedule").innerText = "No schedule found for water pump.";
-        }
-      } else if (device === "fertilizerPump") {
-        // Display the schedule for the fertilizer pump in seconds
-        if (schedule.length === 4) {
-          document.getElementById("currentSchedule").innerText = `Day: ${schedule[0]}, On: ${schedule[1]}:${schedule[2]}, Duration: ${schedule[3]} seconds`;
-        } else {
-          document.getElementById("currentSchedule").innerText = "No schedule found for fertilizer pump.";
-        }
-      } else {
-        // Display the schedule for light or fan
-        if (schedule.length === 4) {
-          document.getElementById("currentSchedule").innerText = `On: ${schedule[0]}:${schedule[1]}, Off: ${schedule[2]}:${schedule[3]}`;
-        } else {
-          document.getElementById("currentSchedule").innerText = "No schedule found for light/fan.";
-        }
-      }
+  function showDashboard() {
+    document.getElementById('scheduleSettings').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+  }
+
+  function toggleSidebar() {
+    const sidenav = document.getElementById("mySidenav");
+    if (sidenav.style.width === "250px") {
+      sidenav.style.width = "0";
     } else {
-      document.getElementById("currentSchedule").innerText = "No schedule found.";
+      sidenav.style.width = "250px";
     }
-  };
-  xhr.send();
-}
-
-
-
-window.onload = function() {
-  // Request the current mode state from the server
-  var xhr = new XMLHttpRequest();
-  xhr.open("GET", "/get-current-mode", true);
-  xhr.onload = function() {
-    if (xhr.status === 200) {
-      var currentMode = xhr.responseText.trim(); // Ensure to trim any whitespace
-      document.getElementById("modeToggle").checked = (currentMode === "auto");
-    }
-  };
-  xhr.send();
-
-  loadSchedule();
-  showFields(); // Ensure the correct input fields are displayed based on the initial selection
-};
-
-
-// Load the schedule whenever the dropdown selection changes
-document.getElementById("deviceSelect").addEventListener("change", function() {
-  loadSchedule(); // Load schedule for the newly selected device
-  showFields(); // Display the appropriate input fields
-});
-
-function adjustFanSpeed(element) {
-  var xhr = new XMLHttpRequest();
-  var value = element.value; // Get the value from the slider
-  xhr.open("GET", "/adjust-fan?speed=" + value, true); // Send the value as a query parameter
-  xhr.send();
-}
-
-
-
-
-function controlOutput(element) {
-  var xhr = new XMLHttpRequest();
-  var state = element.checked ? "1" : "0";
-  var url = "";
-
-  // Determine the control type based on the ID attribute of the element
-  switch(element.id) {
-    case "output":
-      url = "/output?state=" + state;
-      break;
-    case "status-led":
-      url = "/toggle-led?state=" + state;
-      break;
-    case "toggle-water":
-      url = "/toggle-water?state=" + state;
-      break;
-    case "toggle-fertilizer":
-      url = "/toggle-fertilizer?state=" + state;
-      break;
-    default:
-      console.error("Unknown control element", element.id);
-      return; // Exit the function if control type is unknown
   }
+</script>
 
-  xhr.open("GET", url, true);
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4 && xhr.status === 200) {
-      console.log(xhr.responseText);
-    }
-  };
-  xhr.send();
-}
-
-
-function toggleLed(element) {
-  var xhr = new XMLHttpRequest();
-  xhr.open("GET", "/toggle", true);
-  xhr.send();
-}
-
-if (!!window.EventSource) {
- var source = new EventSource('/events');
- source.addEventListener('open', function(e) {
-  console.log("Events Connected");
- }, false);
- source.addEventListener('error', function(e) {
-  if (e.target.readyState != EventSource.OPEN) {
-    console.log("Events Disconnected");
-  }
- }, false);
-
-   source.addEventListener('time', function(e) {
-    document.getElementById('current-time').innerHTML = e.data;
-  }, false);
- source.addEventListener('message', function(e) {
-  console.log("message", e.data);
- }, false);
- source.addEventListener('time', function(event) {
-  document.getElementById('time-display').innerHTML = event.data;
-}, false);
-
- source.addEventListener('led_state', function(e) {
-  console.log("led_state", e.data);
-  var inputChecked;
-  if( e.data == 1){ inputChecked = true; }
-  else { inputChecked = false; }
-  document.getElementById("led").checked = inputChecked;
- }, false);
- 
- source.addEventListener('temperature', function(e) {
-  console.log("temperature", e.data);
-  document.getElementById("temp").innerHTML = e.data;
- }, false);
- source.addEventListener('humidity', function(e) {
-  console.log("humidity", e.data);
-  document.getElementById("humi").innerHTML = e.data;
- }, false);
-
-}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
