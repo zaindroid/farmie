@@ -320,27 +320,52 @@
       button.textContent = 'Off';
       console.log(`Toggling ${device} off`);
     }
-    // Here you can add the logic to send requests to the backend to toggle devices on or off
+     // Here you can add the logic to send requests to the backend to toggle devices on or off
+ 
+     var xhr = new XMLHttpRequest();
+    xhr.open("GET", `/toggle-${device}?state=${isOff ? 'on' : 'off'}`, true);
+    xhr.send();
+
   }
 
-  function showScheduleSettings() {
-    document.getElementById('dashboard').style.display = 'none';
-    document.getElementById('scheduleSettings').style.display = 'block';
+  
+  // logout function
+  function logoutButton() {
+    var xhr = new XMLHttpRequest();
+    xhr.open("GET", "/logout", true);
+    xhr.send();
+    setTimeout(function(){ window.open("/logged-out","_self"); }, 1000);
   }
 
-  function showDashboard() {
-    document.getElementById('scheduleSettings').style.display = 'none';
-    document.getElementById('dashboard').style.display = 'block';
-  }
+  function togglePump(pumpType) {
+  var xhr = new XMLHttpRequest();
+  xhr.open("GET", "/toggle-" + pumpType, true);
+  xhr.send();
+}
 
-  function toggleSidebar() {
-    const sidenav = document.getElementById("mySidenav");
-    if (sidenav.style.width === "250px") {
-      sidenav.style.width = "0";
-    } else {
-      sidenav.style.width = "250px";
+function toggleMode(element) {
+  var mode = element.checked ? "auto" : "manual";
+  var xhr = new XMLHttpRequest();
+  xhr.open("GET", "/mode-toggle?mode=" + mode, true);
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4 && xhr.status === 200) {
+      console.log("Mode changed to: " + mode);
     }
-  }
+  };
+  xhr.send();
+}
+
+
+  // ------------------------------------------------ the starting part
+  
+
+
+function toggleLed(element) {
+  var xhr = new XMLHttpRequest();
+  xhr.open("GET", "/toggle", true);
+  xhr.send();
+}
+
 </script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
